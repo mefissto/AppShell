@@ -1,20 +1,25 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
 } from '@nestjs/common';
 
+import { ApiRoutes } from '@enums/api-routes';
+
+import { CreateUserDto } from './dtos/create-user.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
+import { UserEntity } from './entities/user.entity';
 import { UsersService } from './users.service';
 
-@Controller('users')
+@Controller(ApiRoutes.USERS)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('list')
+  @Get()
   getList(): string {
     return this.usersService.getList();
   }
@@ -25,12 +30,12 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() userData: any): string {
+  create(@Body() userData: CreateUserDto): Promise<UserEntity> {
     return this.usersService.create(userData);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() userData: any): string {
+  update(@Param('id') id: string, @Body() userData: UpdateUserDto): string {
     return this.usersService.update(id, userData);
   }
 

@@ -20,6 +20,13 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@constants/*": ["src/common/constants/*"],
+      "@enums/*": ["src/common/enums/*"],
+      "@interfaces/*": ["src/common/interfaces/*"],
+      "@generated/*": ["src/generated/*"],
+      "@database/*": ["src/database/*"]
+    }
   }
 }

@@ -25,7 +25,7 @@
       "@constants/*": ["src/common/constants/*"],
       "@enums/*": ["src/common/enums/*"],
       "@interfaces/*": ["src/common/interfaces/*"],
-      "@generated/*": ["src/generated/*"],
+      "@generated/*": ["generated/*"],
       "@database/*": ["src/database/*"]
     }
   }

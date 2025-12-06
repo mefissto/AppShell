@@ -1,4 +1,5 @@
 export enum ApiRoutes {
-  USERS = 'users',
   AUTH = 'auth',
+  USERS = 'users',
+  TASKS = 'tasks',
 }

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
 
@@ -32,14 +36,44 @@ export class UsersService {
    * @returns The user entity.
    * @throws NotFoundException if the user is not found.
    */
-  async findOne(id: string): Promise<UserEntity> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async findOneById(id: string): Promise<UserEntity> {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id } });
 
-    if (user) {
-      return new UserEntity(user);
+      if (user) {
+        return new UserEntity(user);
+      }
+
+      throw new NotFoundException(`User with ID: ${id} not found`);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to get user with ID: ${id}`,
+        { cause: error },
+      );
     }
+  }
 
-    throw new NotFoundException(`User with ID: ${id} not found`);
+  /**
+   * Retrieves a user by their email.
+   * @param email - The email of the user to retrieve.
+   * @returns The user entity.
+   * @throws NotFoundException if the user is not found.
+   */
+  async findOneByEmail(email: string): Promise<UserEntity> {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { email } });
+
+      if (user) {
+        return new UserEntity(user);
+      }
+
+      throw new NotFoundException(`User with email: ${email} not found`);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to get user with email: ${email}`,
+        { cause: error },
+      );
+    }
   }
 
   /**

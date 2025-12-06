@@ -20,13 +20,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  getList(): Promise<UserEntity[]> {
-    return this.usersService.getList();
+  findAll(): Promise<UserEntity[]> {
+    return this.usersService.findAll();
   }
 
   @Get(':id')
-  getById(@Param('id') id: string): Promise<UserEntity> {
-    return this.usersService.getById(id);
+  findOne(@Param('id') id: string): Promise<UserEntity> {
+    return this.usersService.findOne(id);
   }
 
   @Post()

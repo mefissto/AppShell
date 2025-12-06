@@ -15,7 +15,7 @@ export class UsersService {
    * Retrieves a list of all users.
    * @returns An array of user entities.
    */
-  async getList(): Promise<UserEntity[]> {
+  async findAll(): Promise<UserEntity[]> {
     try {
       const users = await this.prisma.user.findMany();
 
@@ -32,7 +32,7 @@ export class UsersService {
    * @returns The user entity.
    * @throws NotFoundException if the user is not found.
    */
-  async getById(id: string): Promise<UserEntity> {
+  async findOne(id: string): Promise<UserEntity> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (user) {

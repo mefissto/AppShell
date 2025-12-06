@@ -26,7 +26,8 @@
       "@enums/*": ["src/common/enums/*"],
       "@interfaces/*": ["src/common/interfaces/*"],
       "@generated/*": ["generated/*"],
-      "@database/*": ["src/database/*"]
+      "@database/*": ["src/database/*"],
+      "@modules/*": ["src/modules/*"]
     }
   }
 }

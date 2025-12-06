@@ -20,12 +20,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  getList(): string {
+  getList(): Promise<UserEntity[]> {
     return this.usersService.getList();
   }
 
   @Get(':id')
-  getById(@Param('id') id: string): string {
+  getById(@Param('id') id: string): Promise<UserEntity> {
     return this.usersService.getById(id);
   }
 
@@ -35,12 +35,15 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() userData: UpdateUserDto): string {
+  update(
+    @Param('id') id: string,
+    @Body() userData: UpdateUserDto,
+  ): Promise<UserEntity> {
     return this.usersService.update(id, userData);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string): string {
+  delete(@Param('id') id: string): Promise<UserEntity> {
     return this.usersService.delete(id);
   }
 }

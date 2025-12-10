@@ -4,6 +4,17 @@ import { EnvironmentModes } from '@interfaces/environment-variables';
 
 // Regex pattern to match strings like '1d', '2h', '30m', etc.
 const msPattern = /^\d+[smhd]$/;
+// Port range constants
+const minPortValue = 0;
+const maxPortValue = 65535;
+
+const portValidation = (value: string) => {
+  const num = parseInt(value, 10);
+  if (num < minPortValue || num > maxPortValue) {
+    throw new Error(`Port must be between ${minPortValue} and ${maxPortValue}`);
+  }
+  return num;
+};
 
 /**
  * Joi schema for validating and transforming environment variables
@@ -12,7 +23,11 @@ export default Joi.object({
   // APP
   APP_NAME: Joi.string().required(),
   APP_VERSION: Joi.string().required(),
-  APP_PORT: Joi.number().port().default(3000),
+  APP_PORT: Joi.string()
+    .pattern(/^\d+$/, 'Port must be a plain number without scientific notation')
+    .required()
+    .custom(portValidation)
+    .default(3000),
   API_VERSION: Joi.string().required(),
   NODE_ENV: Joi.string()
     .trim()

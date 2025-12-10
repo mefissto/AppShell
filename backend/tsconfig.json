@@ -26,6 +26,9 @@
       "@enums/*": ["src/common/enums/*"],
       "@interfaces/*": ["src/common/interfaces/*"],
       "@entities/*": ["src/common/entities/*"],
+      "@filters/*": ["src/common/filters/*"],
+      "@utils/*": ["src/common/utils/*"],
+      "@config/*": ["src/config/*"],
       "@generated/*": ["generated/*"],
       "@database/*": ["src/database/*"],
       "@modules/*": ["src/modules/*"]

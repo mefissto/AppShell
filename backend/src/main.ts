@@ -1,6 +1,8 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
+import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -24,6 +26,8 @@ async function bootstrap() {
       // TODO: add custom validation error messages (exceptionFactory)
     }),
   );
+
+  app.useGlobalFilters(new PrismaExceptionFilter());
 
   await app.listen(process.env.PORT ?? 3000);
 }

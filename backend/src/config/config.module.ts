@@ -18,6 +18,7 @@ const envFilePath = env ? `.env.${env}` : '.env';
 @Module({
   imports: [
     NestConfigModule.forRoot({
+      isGlobal: true,
       envFilePath,
       load: [appConfig, databaseConfig, jwtConfig],
       validate: (config) => {

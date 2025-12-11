@@ -5,7 +5,8 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
-import { Prisma } from '@generated/prisma/client';
+import { Prisma, User } from '@generated/prisma/client';
+import { HashingService } from '@modules/security/services/hashing.service';
 
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
@@ -13,7 +14,10 @@ import { UserEntity } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly hashingService: HashingService,
+  ) {}
 
   /**
    * Retrieves a list of all users.
@@ -73,17 +77,12 @@ export class UsersService {
    * @returns The user entity.
    * @throws NotFoundException if the user is not found.
    */
-  async findUniqueOrThrow(
-    where: Prisma.UserWhereUniqueInput,
-  ): Promise<UserEntity> {
-    return this.prisma.user
-      .findUniqueOrThrow({ where })
-      .then((user) => new UserEntity(user))
-      .catch(() => {
-        throw new NotFoundException(
-          `User not found with criteria: ${JSON.stringify(where)}`,
-        );
-      });
+  async findUniqueOrThrow(where: Prisma.UserWhereUniqueInput): Promise<User> {
+    return this.prisma.user.findUniqueOrThrow({ where }).catch(() => {
+      throw new NotFoundException(
+        `User not found with criteria: ${JSON.stringify(where)}`,
+      );
+    });
   }
 
   /**
@@ -115,8 +114,10 @@ export class UsersService {
    * @returns The created user entity.
    */
   async create(data: CreateUserDto): Promise<UserEntity> {
+    const hashedPassword = await this.hashingService.hash(data.password);
+
     return this.prisma.user
-      .create({ data })
+      .create({ data: { ...data, password: hashedPassword } })
       .then((user) => new UserEntity(user));
   }
 

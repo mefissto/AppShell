@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
-
 import { Prisma } from '@generated/prisma/client';
+
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserEntity } from './entities/user.entity';
@@ -46,11 +46,44 @@ export class UsersService {
 
       throw new NotFoundException(`User with ID: ${id} not found`);
     } catch (error) {
+      console.error(`Failed to get user with ID: ${id}`, error);
       throw new InternalServerErrorException(
         `Failed to get user with ID: ${id}`,
         { cause: error },
       );
     }
+  }
+
+  /**
+   * Finds a unique user based on the provided criteria.
+   * @param where - The unique criteria to find the user.
+   * @returns The user entity or null if not found.
+   */
+  async findUnique(
+    where: Prisma.UserWhereUniqueInput,
+  ): Promise<UserEntity | null> {
+    return this.prisma.user
+      .findUnique({ where })
+      .then((user) => (user ? new UserEntity(user) : null));
+  }
+
+  /**
+   * Finds a unique user based on the provided criteria or throws an error if not found.
+   * @param where - The unique criteria to find the user.
+   * @returns The user entity.
+   * @throws NotFoundException if the user is not found.
+   */
+  async findUniqueOrThrow(
+    where: Prisma.UserWhereUniqueInput,
+  ): Promise<UserEntity> {
+    return this.prisma.user
+      .findUniqueOrThrow({ where })
+      .then((user) => new UserEntity(user))
+      .catch(() => {
+        throw new NotFoundException(
+          `User not found with criteria: ${JSON.stringify(where)}`,
+        );
+      });
   }
 
   /**
@@ -82,19 +115,9 @@ export class UsersService {
    * @returns The created user entity.
    */
   async create(data: CreateUserDto): Promise<UserEntity> {
-    console.log('Creating user with data:', data); // Debug log
-    try {
-      // You can add additional logic here, such as hashing passwords, validation, etc.
-      const user = await this.prisma.user.create({ data });
-
-      return new UserEntity(user);
-    } catch (error: Prisma.PrismaClientKnownRequestError | any) {
-      console.error('Unique constraint violation:', error.meta);
-      console.log('message', error.message);
-
-      // Handle errors appropriately
-      throw error;
-    }
+    return this.prisma.user
+      .create({ data })
+      .then((user) => new UserEntity(user));
   }
 
   /**
@@ -104,17 +127,12 @@ export class UsersService {
    * @returns The updated user entity.
    */
   async update(id: string, userData: UpdateUserDto): Promise<UserEntity> {
-    try {
-      const user = await this.prisma.user.update({
+    return this.prisma.user
+      .update({
         where: { id },
         data: userData,
-      });
-
-      return new UserEntity(user);
-    } catch (error) {
-      console.error('Failed to update user', error);
-      throw error;
-    }
+      })
+      .then((user) => new UserEntity(user));
   }
 
   /**
@@ -123,15 +141,10 @@ export class UsersService {
    * @returns The deleted user entity.
    */
   async delete(id: string): Promise<UserEntity> {
-    try {
-      const user = await this.prisma.user.delete({
+    return this.prisma.user
+      .delete({
         where: { id },
-      });
-
-      return new UserEntity(user);
-    } catch (error) {
-      console.error('Failed to delete user', error);
-      throw error;
-    }
+      })
+      .then((user) => new UserEntity(user));
   }
 }

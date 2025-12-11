@@ -28,6 +28,8 @@
       "@entities/*": ["src/common/entities/*"],
       "@filters/*": ["src/common/filters/*"],
       "@utils/*": ["src/common/utils/*"],
+      "@decorators/*": ["src/common/decorators/*"],
+      "@guards/*": ["src/common/guards/*"],
       "@config/*": ["src/config/*"],
       "@generated/*": ["generated/*"],
       "@database/*": ["src/database/*"],

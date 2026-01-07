@@ -1,28 +1,19 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { type ConfigType } from '@nestjs/config';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
+import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
+import { Observable } from 'rxjs';
 
-import jwtConfig from '@config/jwt.config';
 import { IS_PUBLIC_ROUTE_KEY } from '@decorators/public-route.decorator';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
-  constructor(
-    private jwtService: JwtService,
-    private reflector: Reflector,
-    @Inject(jwtConfig.KEY)
-    private readonly config: ConfigType<typeof jwtConfig>,
-  ) {}
+export class AuthGuard extends PassportAuthGuard('jwt') implements CanActivate {
+  constructor(private reflector: Reflector) {
+    super();
+  }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(
       IS_PUBLIC_ROUTE_KEY,
       [context.getHandler(), context.getClass()],
@@ -33,32 +24,11 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
-    const token = this.extractTokenFromHeader(request);
-
-    if (!token) {
-      throw new UnauthorizedException();
-    }
-
-    try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: this.config.secret,
-        audience: this.config.audience,
-        issuer: this.config.issuer,
-      });
-
-      // TODO: Find a better way to attach user info to request
-      request['user'] = payload;
-    } catch {
-      throw new UnauthorizedException();
-    }
-
-    return true;
-  }
-
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-
-    return type === 'Bearer' ? token : undefined;
+    /** Let Passport handle JWT extraction, verification, and validate()
+     * It will verify the token using the secret from config
+     * And call the validate method in JwtStrategy
+     * It will attach the validated user to request.user
+     */
+    return super.canActivate(context);
   }
 }

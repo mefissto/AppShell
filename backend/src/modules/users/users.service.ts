@@ -25,7 +25,9 @@ export class UsersService {
    */
   async findAll(): Promise<UserEntity[]> {
     try {
-      const users = await this.prisma.user.findMany();
+      const users = await this.prisma.user.findMany({
+        omit: { password: true },
+      });
 
       return users.map((user) => new UserEntity(user));
     } catch (error) {
@@ -42,7 +44,10 @@ export class UsersService {
    */
   async findOneById(id: string): Promise<UserEntity> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        omit: { password: true },
+      });
 
       if (user) {
         return new UserEntity(user);
@@ -67,7 +72,7 @@ export class UsersService {
     where: Prisma.UserWhereUniqueInput,
   ): Promise<UserEntity | null> {
     return this.prisma.user
-      .findUnique({ where })
+      .findUnique({ where, omit: { password: true } })
       .then((user) => (user ? new UserEntity(user) : null));
   }
 
@@ -77,8 +82,11 @@ export class UsersService {
    * @returns The user entity.
    * @throws NotFoundException if the user is not found.
    */
-  async findUniqueOrThrow(where: Prisma.UserWhereUniqueInput): Promise<User> {
-    return this.prisma.user.findUniqueOrThrow({ where }).catch(() => {
+  async findUniqueOrThrow(
+    where: Prisma.UserWhereUniqueInput,
+    omit: Prisma.UserSelect = { password: true },
+  ): Promise<User> {
+    return this.prisma.user.findUniqueOrThrow({ where, omit }).catch(() => {
       throw new NotFoundException(
         `User not found with criteria: ${JSON.stringify(where)}`,
       );
@@ -93,7 +101,10 @@ export class UsersService {
    */
   async findOneByEmail(email: string): Promise<UserEntity> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { email } });
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        omit: { password: true },
+      });
 
       if (user) {
         return new UserEntity(user);
@@ -117,7 +128,10 @@ export class UsersService {
     const hashedPassword = await this.hashingService.hash(data.password);
 
     return this.prisma.user
-      .create({ data: { ...data, password: hashedPassword } })
+      .create({
+        data: { ...data, password: hashedPassword },
+        omit: { password: true },
+      })
       .then((user) => new UserEntity(user));
   }
 
@@ -132,6 +146,7 @@ export class UsersService {
       .update({
         where: { id },
         data: userData,
+        omit: { password: true },
       })
       .then((user) => new UserEntity(user));
   }
@@ -145,6 +160,7 @@ export class UsersService {
     return this.prisma.user
       .delete({
         where: { id },
+        omit: { password: true },
       })
       .then((user) => new UserEntity(user));
   }

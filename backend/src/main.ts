@@ -1,5 +1,5 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 
 import appConfig from '@config/app.config';
 import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
@@ -28,7 +28,17 @@ async function bootstrap() {
     }),
   );
 
+  /** Global Filters
+   * PrismaExceptionFilter will catch any PrismaClientKnownRequestError exceptions
+   * and transform them into appropriate HTTP exceptions
+   */
   app.useGlobalFilters(new PrismaExceptionFilter());
+
+  /** Global Interceptors
+   * ClassSerializerInterceptor will automatically serialize the response objects
+   * according to the @Exclude and @Expose decorators defined in the entity classes
+   */
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   const { port } = app.get(appConfig.KEY);
 

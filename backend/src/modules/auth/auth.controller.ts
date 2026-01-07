@@ -1,18 +1,25 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+
+import { PublicRoute } from '@decorators/public-route.decorator';
+import { ApiRoutes } from '@enums/api-routes';
 
 import { AuthService } from './auth.service';
+import { SignInDto } from './dto/sign-in.dto';
+import { SignUpDto } from './dto/sign-up-dto';
+import { TokenPair } from './interfaces/token-pair';
 
-@Controller('auth')
+@PublicRoute()
+@Controller(ApiRoutes.AUTH)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get('login')
-  login(): string {
-    return this.authService.login();
+  @Post('login')
+  signIn(@Body() signInDto: SignInDto): Promise<TokenPair> {
+    return this.authService.signIn(signInDto);
   }
 
-  @Get('register')
-  register(): string {
-    return this.authService.register();
+  @Post('register')
+  signUp(@Body() signUpDto: SignUpDto): Promise<void> {
+    return this.authService.signUp(signUpDto);
   }
 }

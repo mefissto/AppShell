@@ -70,9 +70,10 @@ export class UsersService {
    */
   async findUnique(
     where: Prisma.UserWhereUniqueInput,
+    omit: Prisma.UserSelect = { password: true },
   ): Promise<UserEntity | null> {
     return this.prisma.user
-      .findUnique({ where, omit: { password: true } })
+      .findUnique({ where, omit })
       .then((user) => (user ? new UserEntity(user) : null));
   }
 

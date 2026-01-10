@@ -14,15 +14,37 @@ datasource db {
 }
 
 // ===================
+// Session
+// ===================
+
+model Session {
+  id           String    @id @default(cuid())
+  refreshToken String?   @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  expiresAt    DateTime?
+  revokedAt    DateTime?
+  ipAddress    String?
+  userAgent    String?
+  deviceName   String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String // Foreign key to User model
+
+  @@index([id, userId])
+}
+
+// ===================
 // User 
 // ===================
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   password  String
   name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sessions  Session[]
 }
 
 // ===================

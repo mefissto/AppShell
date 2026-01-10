@@ -1,12 +1,16 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
+import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
 
 import { IS_PUBLIC_ROUTE_KEY } from '@decorators/public-route.decorator';
+import { AuthStrategy } from '@enums/auth-strategy.enum';
 
 @Injectable()
-export class AuthGuard extends PassportAuthGuard('jwt') implements CanActivate {
+export class JwtAuthGuard
+  extends AuthGuard(AuthStrategy.JWT)
+  implements CanActivate
+{
   constructor(private reflector: Reflector) {
     super();
   }

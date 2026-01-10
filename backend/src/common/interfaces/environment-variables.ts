@@ -50,6 +50,7 @@ export interface DatabaseEnvConfig {
  */
 export interface JwtEnvConfig {
   secret: string;
+  refreshSecret: string;
   audience: string;
   issuer: string;
   accessTokenTtl: number | StringValue;

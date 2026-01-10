@@ -18,6 +18,7 @@ export default registerAs(
   EnvironmentVariableKeys.JWT,
   (): JwtEnvConfig => ({
     secret: process.env.JWT_SECRET as string,
+    refreshSecret: process.env.JWT_REFRESH_SECRET as string,
     audience: process.env.JWT_TOKEN_AUDIENCE as string,
     issuer: process.env.JWT_TOKEN_ISSUER as string,
     accessTokenTtl: process.env.JWT_ACCESS_TOKEN_TTL as number | StringValue,

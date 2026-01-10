@@ -43,7 +43,8 @@ export default Joi.object({
   DATABASE_URL: Joi.string().uri().required(),
 
   // JWT
-  JWT_SECRET: Joi.string().min(32).required(),
+  JWT_SECRET: Joi.string().min(64).required(),
+  JWT_REFRESH_SECRET: Joi.string().min(64).required(),
   JWT_TOKEN_AUDIENCE: Joi.string().required(),
   JWT_TOKEN_ISSUER: Joi.string().required(),
   // TTL can be number (seconds) or string ('1d', '2h', '30m', etc.)

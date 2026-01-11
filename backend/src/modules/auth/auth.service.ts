@@ -15,7 +15,6 @@ import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
 import { UserEntity } from '@modules/users/entities/user.entity';
 import { UsersService } from '@modules/users/users.service';
-import { castExists } from '@utils/asserts.utils';
 
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up-dto';
@@ -66,14 +65,12 @@ export class AuthService {
 
   async validateUser(signInDto: SignInDto): Promise<UserEntity | null> {
     const user = await this.usersService.findUnique(
-      {
-        email: signInDto.email,
-      },
+      { email: signInDto.email },
       { password: false },
     );
 
-    if (!user?.password) {
-      throw new InternalServerErrorException('User password not found');
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await this.hashingService.compare(
@@ -94,26 +91,22 @@ export class AuthService {
   ): Promise<UserEntity | null> {
     const session = await this.sessionsService.findById(sessionId);
 
-    if (!session) {
-      throw new UnauthorizedException('Session not found for user');
+    if (!session || !session.refreshToken || !session.expiresAt) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     const user = await this.usersService.findUnique({ id: session.userId });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     const isRefreshTokenValid = await this.hashingService.compare(
       refreshToken,
-      castExists(session.refreshToken, 'Refresh token not found in session'),
+      session.refreshToken,
     );
     const isRefreshTokenRevoked = !!session.revokedAt;
-    const isRefreshTokenExpired =
-      new Date() >
-      new Date(
-        castExists(session.expiresAt, 'Session expiration date not found'),
-      );
+    const isRefreshTokenExpired = new Date() > new Date(session.expiresAt);
 
     if (
       isRefreshTokenValid &&

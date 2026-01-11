@@ -1,11 +1,7 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
-import { Prisma, User } from '@generated/prisma/client';
+import { Prisma } from '@generated/prisma/client';
 import { HashingService } from '@modules/security/services/hashing.service';
 
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -24,16 +20,9 @@ export class UsersService {
    * @returns An array of user entities.
    */
   async findAll(): Promise<UserEntity[]> {
-    try {
-      const users = await this.prisma.user.findMany({
-        omit: { password: true },
-      });
-
-      return users.map((user) => new UserEntity(user));
-    } catch (error) {
-      console.error('Failed to get users list', error);
-      throw error;
-    }
+    return await this.prisma.user
+      .findMany({ omit: { password: true } })
+      .then((users) => users.map((user) => new UserEntity(user)));
   }
 
   /**
@@ -43,24 +32,16 @@ export class UsersService {
    * @throws NotFoundException if the user is not found.
    */
   async findOneById(id: string): Promise<UserEntity> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        omit: { password: true },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      omit: { password: true },
+    });
 
-      if (user) {
-        return new UserEntity(user);
-      }
-
-      throw new NotFoundException(`User with ID: ${id} not found`);
-    } catch (error) {
-      console.error(`Failed to get user with ID: ${id}`, error);
-      throw new InternalServerErrorException(
-        `Failed to get user with ID: ${id}`,
-        { cause: error },
-      );
+    if (user) {
+      return new UserEntity(user);
     }
+
+    throw new NotFoundException(`User with ID: ${id} not found`);
   }
 
   /**
@@ -75,49 +56,6 @@ export class UsersService {
     return this.prisma.user
       .findUnique({ where, omit })
       .then((user) => (user ? new UserEntity(user) : null));
-  }
-
-  /**
-   * Finds a unique user based on the provided criteria or throws an error if not found.
-   * @param where - The unique criteria to find the user.
-   * @returns The user entity.
-   * @throws NotFoundException if the user is not found.
-   */
-  async findUniqueOrThrow(
-    where: Prisma.UserWhereUniqueInput,
-    omit: Prisma.UserSelect = { password: true },
-  ): Promise<User> {
-    return this.prisma.user.findUniqueOrThrow({ where, omit }).catch(() => {
-      throw new NotFoundException(
-        `User not found with criteria: ${JSON.stringify(where)}`,
-      );
-    });
-  }
-
-  /**
-   * Retrieves a user by their email.
-   * @param email - The email of the user to retrieve.
-   * @returns The user entity.
-   * @throws NotFoundException if the user is not found.
-   */
-  async findOneByEmail(email: string): Promise<UserEntity> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { email },
-        omit: { password: true },
-      });
-
-      if (user) {
-        return new UserEntity(user);
-      }
-
-      throw new NotFoundException(`User with email: ${email} not found`);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to get user with email: ${email}`,
-        { cause: error },
-      );
-    }
   }
 
   /**
@@ -143,6 +81,8 @@ export class UsersService {
    * @returns The updated user entity.
    */
   async update(id: string, userData: UpdateUserDto): Promise<UserEntity> {
+    await this.prisma.user.findUniqueOrThrow({ where: { id } }); // throws if missing
+
     return this.prisma.user
       .update({
         where: { id },
@@ -158,6 +98,8 @@ export class UsersService {
    * @returns The deleted user entity.
    */
   async delete(id: string): Promise<UserEntity> {
+    await this.prisma.user.findUniqueOrThrow({ where: { id } }); // throws if missing
+
     return this.prisma.user
       .delete({
         where: { id },

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
 
@@ -19,12 +15,9 @@ export class TasksService {
    * @returns An array of TaskEntity.
    */
   async findAll(): Promise<TaskEntity[]> {
-    try {
-      const tasks = await this.prisma.task.findMany();
-      return tasks.map((task) => new TaskEntity(task));
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to retrieve tasks');
-    }
+    return await this.prisma.task
+      .findMany()
+      .then((results) => results.map((task) => new TaskEntity(task)));
   }
 
   /**
@@ -33,19 +26,13 @@ export class TasksService {
    * @returns The found TaskEntity.
    */
   async findOne(id: string): Promise<TaskEntity> {
-    try {
-      const task = await this.prisma.task.findUnique({ where: { id } });
+    const task = await this.prisma.task.findUnique({ where: { id } });
 
-      if (!task) {
-        throw new NotFoundException(`Task with ID ${id} not found`);
-      }
-
-      return new TaskEntity(task);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to retrieve task with ID ${id}`,
-      );
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
     }
+
+    return new TaskEntity(task);
   }
 
   /**
@@ -54,16 +41,9 @@ export class TasksService {
    * @returns The created TaskEntity.
    */
   async create(createTaskDto: CreateTaskDto): Promise<TaskEntity> {
-    try {
-      const task = await this.prisma.task.create({
-        data: createTaskDto,
-      });
-
-      return new TaskEntity(task);
-    } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException('Failed to create task');
-    }
+    return await this.prisma.task
+      .create({ data: createTaskDto })
+      .then((task) => new TaskEntity(task));
   }
 
   /**
@@ -73,17 +53,11 @@ export class TasksService {
    * @returns The updated TaskEntity.
    */
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<TaskEntity> {
-    try {
-      const task = await this.prisma.task.update({
-        where: { id },
-        data: updateTaskDto,
-      });
-      return new TaskEntity(task);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to update task with ID ${id}`,
-      );
-    }
+    await this.prisma.task.findUniqueOrThrow({ where: { id } }); // throws if missing
+
+    return await this.prisma.task
+      .update({ where: { id }, data: updateTaskDto })
+      .then((task) => new TaskEntity(task));
   }
 
   /**
@@ -92,13 +66,10 @@ export class TasksService {
    * @returns The deleted TaskEntity.
    */
   async delete(id: string): Promise<TaskEntity> {
-    try {
-      const task = await this.prisma.task.delete({ where: { id } });
-      return new TaskEntity(task);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to delete task with ID ${id}`,
-      );
-    }
+    await this.prisma.task.findUniqueOrThrow({ where: { id } }); // throws if missing
+
+    return await this.prisma.task
+      .delete({ where: { id } })
+      .then((task) => new TaskEntity(task));
   }
 }

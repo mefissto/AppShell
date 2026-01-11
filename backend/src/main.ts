@@ -1,6 +1,7 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 import appConfig from '@config/app.config';
 import { CORS_CONFIG } from '@config/cors.config';
@@ -10,6 +11,13 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  /**
+   * Helmet helps you secure your Express apps by setting various HTTP headers
+   * Applying helmet as global or registering it must come before other calls to app.use() or setup functions that may call app.use()
+   * https://docs.nestjs.com/security/helmet
+   */
+  app.use(helmet());
 
   /**
    * Global Pipes
@@ -48,8 +56,6 @@ async function bootstrap() {
   app.enableCors(CORS_CONFIG);
 
   // TODO: Add CSRF protection ? if needed (considering SameSite=strict cookies)
-  // TODO: Add Helmet for setting various HTTP headers for security
-  // TODO: Add rate limiting to prevent brute-force attacks
   // TODO: Set up Swagger for API documentation
 
   const { port } = app.get(appConfig.KEY);

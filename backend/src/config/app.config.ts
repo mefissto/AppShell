@@ -22,5 +22,7 @@ export default registerAs(
     apiVersion: process.env.API_VERSION as string,
     env: process.env.NODE_ENV as string,
     hashSaltRounds: parseInt(process.env.HASH_SALT_ROUNDS as string, 10),
+    throttleTtl: parseInt(process.env.THROTTLE_TTL as string, 10),
+    throttleLimit: parseInt(process.env.THROTTLE_LIMIT as string, 10),
   }),
 );

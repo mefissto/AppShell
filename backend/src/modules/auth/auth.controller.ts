@@ -8,10 +8,15 @@ import { JwtRefreshAuthGuard } from '@guards/jwt-refresh-auth.guard';
 import { LocalAuthGuard } from '@guards/local-auth.guard';
 import { UserEntity } from '@modules/users/entities/user.entity';
 
+import {
+  AuthThrottle,
+  StrictAuthThrottle,
+} from '@decorators/throttle.decorator';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up-dto';
 
 @PublicRoute()
+@AuthThrottle()
 @Controller(ApiRoutes.AUTH)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -30,6 +35,10 @@ export class AuthController {
   signUp(@Body() signUpDto: SignUpDto): Promise<void> {
     return this.authService.signUp(signUpDto);
   }
+
+  @StrictAuthThrottle()
+  @Post('reset-password')
+  resetPassword(): void {}
 
   @Post('refresh')
   @UseGuards(JwtRefreshAuthGuard)

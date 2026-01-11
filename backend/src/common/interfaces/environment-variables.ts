@@ -36,6 +36,8 @@ export interface AppEnvConfig {
   apiVersion: string;
   env: string;
   hashSaltRounds: number;
+  throttleTtl: number;
+  throttleLimit: number;
 }
 
 /**

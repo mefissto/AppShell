@@ -1,10 +1,13 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
 import appConfig from '@config/app.config';
 import { CORS_CONFIG } from '@config/cors.config';
+import { SWAGGER_CONFIG } from '@config/swagger.config';
+import { SWAGGER_DOCS_PATH } from '@constants/constants';
 import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
 
 import { AppModule } from './app.module';
@@ -56,7 +59,10 @@ async function bootstrap() {
   app.enableCors(CORS_CONFIG);
 
   // TODO: Add CSRF protection ? if needed (considering SameSite=strict cookies)
-  // TODO: Set up Swagger for API documentation
+
+  const documentFactory = () =>
+    SwaggerModule.createDocument(app, SWAGGER_CONFIG);
+  SwaggerModule.setup(SWAGGER_DOCS_PATH, app, documentFactory);
 
   const { port } = app.get(appConfig.KEY);
 

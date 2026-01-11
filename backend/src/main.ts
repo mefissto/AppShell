@@ -59,6 +59,8 @@ async function bootstrap() {
   app.enableCors(CORS_CONFIG);
 
   // TODO: Add CSRF protection ? if needed (considering SameSite=strict cookies)
+  // TODO: Configure HTTPS for production
+  // TODO: Add logging middleware (morgan, winston, etc.) ? or use NestJS built-in Logger ? or use a custom logger ?
 
   const documentFactory = () =>
     SwaggerModule.createDocument(app, SWAGGER_CONFIG);

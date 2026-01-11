@@ -87,6 +87,21 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@constants/(.*)$": "<rootDir>/common/constants/$1",
+      "^@enums/(.*)$": "<rootDir>/common/enums/$1",
+      "^@interfaces/(.*)$": "<rootDir>/common/interfaces/$1",
+      "^@entities/(.*)$": "<rootDir>/common/entities/$1",
+      "^@filters/(.*)$": "<rootDir>/common/filters/$1",
+      "^@utils/(.*)$": "<rootDir>/common/utils/$1",
+      "^@decorators/(.*)$": "<rootDir>/common/decorators/$1",
+      "^@guards/(.*)$": "<rootDir>/common/guards/$1",
+      "^@config/(.*)$": "<rootDir>/config/$1",
+      "^@generated/(.*)$": "<rootDir>/../generated/$1",
+      "^@database/(.*)$": "<rootDir>/database/$1",
+      "^@modules/(.*)$": "<rootDir>/modules/$1",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
   }
 }

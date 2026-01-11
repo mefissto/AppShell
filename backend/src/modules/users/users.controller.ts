@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -11,6 +13,7 @@ import {
   ApiBadRequestResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -89,9 +92,10 @@ export class UsersController {
     description: 'User ID',
     example: 'c0a8012b-1234-5678-9abc-def012345678',
   })
-  @ApiOkResponse({ description: 'User deleted.', type: UserEntity })
+  @ApiNoContentResponse({ description: 'User deleted.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
-  delete(@Param('id') id: string): Promise<UserEntity> {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(@Param('id') id: string): Promise<void> {
     return this.usersService.delete(id);
   }
 }

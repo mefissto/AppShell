@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -11,6 +13,7 @@ import {
   ApiBadRequestResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -20,6 +23,8 @@ import {
 
 import { ApiRoutes } from '@enums/api-routes';
 
+import { CurrentUser } from '@decorators/current-user.decorator';
+import { UserEntity } from '@modules/users/entities/user.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskEntity } from './entities/task.entity';
@@ -39,8 +44,8 @@ export class TasksController {
     isArray: true,
   })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
-  findAll(): Promise<TaskEntity[]> {
-    return this.tasksService.findAll();
+  findAll(@CurrentUser() currentUser: UserEntity): Promise<TaskEntity[]> {
+    return this.tasksService.findAll(currentUser.id);
   }
 
   @Get(':id')
@@ -52,8 +57,11 @@ export class TasksController {
   })
   @ApiOkResponse({ description: 'Task retrieved.', type: TaskEntity })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
-  findOne(@Param('id') id: string): Promise<TaskEntity> {
-    return this.tasksService.findOne(id);
+  findOne(
+    @Param('id') taskId: string,
+    @CurrentUser() currentUser: UserEntity,
+  ): Promise<TaskEntity> {
+    return this.tasksService.findOneById(taskId, currentUser.id);
   }
 
   @Post()
@@ -61,8 +69,11 @@ export class TasksController {
   @ApiCreatedResponse({ description: 'Task created.', type: TaskEntity })
   @ApiBadRequestResponse({ description: 'Validation error.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
-  create(@Body() createTaskDto: CreateTaskDto): Promise<TaskEntity> {
-    return this.tasksService.create(createTaskDto);
+  create(
+    @Body() createTaskDto: CreateTaskDto,
+    @CurrentUser() currentUser: UserEntity,
+  ): Promise<TaskEntity> {
+    return this.tasksService.create(createTaskDto, currentUser.id);
   }
 
   @Patch(':id')
@@ -78,8 +89,9 @@ export class TasksController {
   update(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
+    @CurrentUser() currentUser: UserEntity,
   ): Promise<TaskEntity> {
-    return this.tasksService.update(id, updateTaskDto);
+    return this.tasksService.update(id, updateTaskDto, currentUser.id);
   }
 
   @Delete(':id')
@@ -89,9 +101,13 @@ export class TasksController {
     description: 'Task ID',
     example: 'c0a8012b-1234-5678-9abc-def012345678',
   })
-  @ApiOkResponse({ description: 'Task deleted.', type: TaskEntity })
+  @ApiNoContentResponse({ description: 'Task deleted.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
-  delete(@Param('id') id: string): Promise<TaskEntity> {
-    return this.tasksService.delete(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: UserEntity,
+  ): Promise<void> {
+    return this.tasksService.delete(id, currentUser.id);
   }
 }

@@ -95,16 +95,14 @@ export class UsersService {
   /**
    * Deletes a user by their ID.
    * @param id - The ID of the user to delete.
-   * @returns The deleted user entity.
+   * @returns void.
    */
-  async delete(id: string): Promise<UserEntity> {
+  async delete(id: string): Promise<void> {
     await this.prisma.user.findUniqueOrThrow({ where: { id } }); // throws if missing
 
-    return this.prisma.user
-      .delete({
-        where: { id },
-        omit: { password: true },
-      })
-      .then((user) => new UserEntity(user));
+    await this.prisma.user.delete({
+      where: { id },
+      omit: { password: true },
+    });
   }
 }

@@ -31,14 +31,6 @@ export class CreateTaskDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
-    description: 'ID of the user who owns the task.',
-    example: 'c0a8012b-1234-5678-9abc-def012345678',
-  })
-  @IsString({ message: 'User ID must be a string' })
-  @IsNotEmpty({ message: 'User ID is required' })
-  userId: string;
-
   @ApiPropertyOptional({
     description: 'Current status of the task.',
     enum: TaskStatus,

@@ -14,22 +14,24 @@ export class TasksService {
    * Retrieves all tasks.
    * @returns An array of TaskEntity.
    */
-  async findAll(): Promise<TaskEntity[]> {
+  async findAll(userId: string): Promise<TaskEntity[]> {
     return await this.prisma.task
-      .findMany()
+      .findMany({ where: { userId } })
       .then((results) => results.map((task) => new TaskEntity(task)));
   }
 
   /**
    * Finds a task by its ID.
-   * @param id - The ID of the task to find.
+   * @param taskId - The ID of the task to find.
    * @returns The found TaskEntity.
    */
-  async findOne(id: string): Promise<TaskEntity> {
-    const task = await this.prisma.task.findUnique({ where: { id } });
+  async findOneById(taskId: string, userId: string): Promise<TaskEntity> {
+    const task = await this.prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
 
     if (!task) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
     return new TaskEntity(task);
@@ -40,36 +42,58 @@ export class TasksService {
    * @param createTaskDto - The data to create the task with.
    * @returns The created TaskEntity.
    */
-  async create(createTaskDto: CreateTaskDto): Promise<TaskEntity> {
+  async create(
+    createTaskDto: CreateTaskDto,
+    userId: string,
+  ): Promise<TaskEntity> {
     return await this.prisma.task
-      .create({ data: createTaskDto })
+      .create({ data: { ...createTaskDto, userId } })
       .then((task) => new TaskEntity(task));
   }
 
   /**
    * Updates a task by its ID.
-   * @param id - The ID of the task to update.
+   * @param taskId - The ID of the task to update.
    * @param updateTaskDto - The data to update the task with.
    * @returns The updated TaskEntity.
    */
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<TaskEntity> {
-    await this.prisma.task.findUniqueOrThrow({ where: { id } }); // throws if missing
+  async update(
+    taskId: string,
+    updateTaskDto: UpdateTaskDto,
+    userId: string,
+  ): Promise<TaskEntity> {
+    // TODO: Think about a composite unique (id, userId) for tasks --> schema.prisma: @@unique([id, userId])
+
+    // Using updateMany to ensure userId is also matched to prevent updating tasks not owned by the user
+    // updateMany returns a count of updated records to verify if a task was updated
+    const updated = await this.prisma.task.updateMany({
+      where: { id: taskId, userId },
+      data: updateTaskDto,
+    });
+
+    if (updated.count === 0) {
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
 
     return await this.prisma.task
-      .update({ where: { id }, data: updateTaskDto })
+      .findFirstOrThrow({ where: { id: taskId, userId } })
       .then((task) => new TaskEntity(task));
   }
 
   /**
    * Deletes a task by its ID.
-   * @param id - The ID of the task to delete.
-   * @returns The deleted TaskEntity.
+   * @param taskId - The ID of the task to delete.
+   * @returns void.
    */
-  async delete(id: string): Promise<TaskEntity> {
-    await this.prisma.task.findUniqueOrThrow({ where: { id } }); // throws if missing
+  async delete(taskId: string, userId: string): Promise<void> {
+    // Using deleteMany to ensure userId is also matched to prevent deleting tasks not owned by the user
+    // deleteMany returns a count of deleted records to verify if a task was deleted
+    const deleted = await this.prisma.task.deleteMany({
+      where: { id: taskId, userId },
+    });
 
-    return await this.prisma.task
-      .delete({ where: { id } })
-      .then((task) => new TaskEntity(task));
+    if (deleted.count === 0) {
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
   }
 }

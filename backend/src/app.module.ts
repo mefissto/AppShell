@@ -8,6 +8,7 @@ import { ConfigModule } from '@config/config.module';
 import { DatabaseModule } from '@database/database.module';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { AuthModule } from '@modules/auth/auth.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { TasksModule } from '@modules/tasks/tasks.module';
 import { UsersModule } from '@modules/users/users.module';
 
@@ -31,6 +32,7 @@ import { UsersModule } from '@modules/users/users.module';
     AuthModule,
     UsersModule,
     TasksModule,
+    NotificationsModule,
   ],
   providers: [
     {

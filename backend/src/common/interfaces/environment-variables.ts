@@ -24,6 +24,7 @@ export const enum EnvironmentVariableKeys {
   APP = 'app',
   DATABASE = 'database',
   JWT = 'jwt',
+  NOTIFICATIONS = 'notifications',
 }
 
 /**
@@ -57,4 +58,17 @@ export interface JwtEnvConfig {
   issuer: string;
   accessTokenTtl: number | StringValue;
   refreshTokenTtl: number | StringValue;
+}
+
+/**
+ * Notifications environment configuration interface
+ */
+export interface NotificationsEnvConfig {
+  resend: {
+    apiKey: string;
+  };
+  email: {
+    from: string;
+    fromName: string;
+  };
 }

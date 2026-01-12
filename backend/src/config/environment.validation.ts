@@ -56,4 +56,9 @@ export default Joi.object({
   JWT_REFRESH_TOKEN_TTL: Joi.alternatives()
     .try(Joi.number().integer().positive(), Joi.string().pattern(msPattern))
     .required(),
+
+  // NOTIFICATIONS
+  RESEND_API_KEY: Joi.string().min(20).required(),
+  NOTIFICATION_FROM_EMAIL: Joi.string().email().required(),
+  NOTIFICATION_FROM_NAME: Joi.string().min(2).required(),
 });

@@ -40,6 +40,8 @@ export default Joi.object({
   HASH_SALT_ROUNDS: Joi.number().integer().min(4).max(31).default(10),
   THROTTLE_TTL: Joi.number().integer().positive().required(),
   THROTTLE_LIMIT: Joi.number().integer().positive().required(),
+  EMAIL_VERIFICATION_TOKEN_TTL: Joi.number().integer().positive().required(),
+  EMAIL_VERIFICATION_URL: Joi.string().uri().required(),
 
   // DATABASE
   DATABASE_URL: Joi.string().uri().required(),

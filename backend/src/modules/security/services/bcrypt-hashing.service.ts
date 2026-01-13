@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 import appConfig from '@config/app.config';
 import { HashingService } from './hashing.service';
@@ -20,5 +21,14 @@ export class BcryptHashingService implements HashingService {
 
   async compare(payload: string, hashed: string): Promise<boolean> {
     return await bcrypt.compare(payload, hashed);
+  }
+
+  /**
+   * Generates a random token of specified byte size and returns it as a hexadecimal string.
+   * @param size
+   * @returns {string} Hexadecimal representation of the random token.
+   */
+  generateRandomHash(size = 32): string {
+    return randomBytes(size).toString('hex');
   }
 }

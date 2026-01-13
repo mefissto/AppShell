@@ -39,6 +39,8 @@ export interface AppEnvConfig {
   hashSaltRounds: number;
   throttleTtl: number;
   throttleLimit: number;
+  emailVerificationTokenTtl: number;
+  emailVerificationUrl: string;
 }
 
 /**

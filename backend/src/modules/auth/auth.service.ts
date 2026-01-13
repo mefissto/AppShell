@@ -11,6 +11,7 @@ import appConfig from '@config/app.config';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 import { JwtPayload } from '@interfaces/jwt-payload';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
 import { UserEntity } from '@modules/users/entities/user.entity';
@@ -18,6 +19,7 @@ import { UsersService } from '@modules/users/users.service';
 
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up-dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtTokenProvider } from './providers/jwt-token.provider';
 
 @Injectable()
@@ -29,6 +31,7 @@ export class AuthService {
     private readonly sessionsService: SessionsService,
     private readonly jwtTokenProvider: JwtTokenProvider,
     private readonly hashingService: HashingService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async signIn(user: UserEntity, response: Response): Promise<void> {
@@ -41,7 +44,50 @@ export class AuthService {
   }
 
   async signUp(signUpDto: SignUpDto): Promise<void> {
-    await this.usersService.create(signUpDto);
+    const emailVerificationToken = this.hashingService.generateRandomHash();
+    const emailVerificationTokenExpiresAt = new Date(
+      new Date().getTime() + this.config.emailVerificationTokenTtl,
+    );
+
+    await this.notificationsService.sendEmailVerificationEmail({
+      to: signUpDto.email,
+      subject: 'Verify Your Email Address',
+      data: {
+        userName: signUpDto.name || signUpDto.email,
+        verificationLink: `${this.config.emailVerificationUrl}?token=${emailVerificationToken}&email=${encodeURIComponent(
+          signUpDto.email,
+        )}`,
+      },
+    });
+
+    await this.usersService.create(signUpDto, {
+      emailVerificationToken: await this.hashingService.hash(
+        emailVerificationToken,
+      ),
+      emailVerificationTokenExpiresAt,
+    });
+  }
+
+  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<void> {
+    // TODO: Think about adding resend verification email functionality with rate limiting
+
+    const user = await this.usersService.findUnique({
+      email: verifyEmailDto.email,
+    });
+    const isTokenValid = await this.validateEmailVerificationToken(
+      user,
+      verifyEmailDto.token,
+    );
+
+    if (!isTokenValid || !user) {
+      throw new UnauthorizedException('Invalid email verification token');
+    }
+
+    await this.usersService.update(user.id, {
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiresAt: null,
+    });
   }
 
   async refreshTokens(
@@ -176,5 +222,27 @@ export class AuthService {
       // TODO: Consider if 'lax' is more appropriate based on app requirements
       sameSite: 'strict', // helps prevent CSRF attacks by not sending cookies on cross-site requests
     });
+  }
+
+  private async validateEmailVerificationToken(
+    user: UserEntity | null,
+    token: string,
+  ): Promise<boolean> {
+    if (
+      !user ||
+      !user.emailVerificationToken ||
+      !user.emailVerificationTokenExpiresAt
+    ) {
+      return false;
+    }
+
+    const isTokenValid = await this.hashingService.compare(
+      token,
+      user.emailVerificationToken,
+    );
+    const isTokenExpired =
+      user.emailVerificationTokenExpiresAt.getTime() < new Date().getTime();
+
+    return isTokenValid && !isTokenExpired;
   }
 }

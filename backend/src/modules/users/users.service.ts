@@ -63,12 +63,15 @@ export class UsersService {
    * @param data - Data for the new user.
    * @returns The created user entity.
    */
-  async create(data: CreateUserDto): Promise<UserEntity> {
+  async create(
+    data: CreateUserDto,
+    userInput: Partial<Prisma.UserCreateInput> = {},
+  ): Promise<UserEntity> {
     const hashedPassword = await this.hashingService.hash(data.password);
 
     return this.prisma.user
       .create({
-        data: { ...data, password: hashedPassword },
+        data: { ...data, password: hashedPassword, ...userInput },
         omit: { password: true },
       })
       .then((user) => new UserEntity(user));
@@ -80,7 +83,10 @@ export class UsersService {
    * @param userData - The data to update the user with.
    * @returns The updated user entity.
    */
-  async update(id: string, userData: UpdateUserDto): Promise<UserEntity> {
+  async update(
+    id: string,
+    userData: UpdateUserDto | Prisma.UserUpdateInput,
+  ): Promise<UserEntity> {
     await this.prisma.user.findUniqueOrThrow({ where: { id } }); // throws if missing
 
     return this.prisma.user

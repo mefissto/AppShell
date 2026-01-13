@@ -33,6 +33,7 @@ import {
 import { AuthService } from './auth.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up-dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @PublicRoute()
 @AuthThrottle()
@@ -69,8 +70,19 @@ export class AuthController {
     return this.authService.signUp(signUpDto);
   }
 
+  @Post('verify-email')
   @StrictAuthThrottle()
+  @ApiOperation({ summary: 'Verify email address' })
+  @ApiOkResponse({ description: 'Email verified successfully.' })
+  @ApiBadRequestResponse({
+    description: 'Invalid or expired verification token.',
+  })
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<void> {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
   @Post('reset-password')
+  @StrictAuthThrottle()
   @ApiOperation({ summary: 'Request password reset' })
   @ApiOkResponse({ description: 'Reset process initiated.' })
   resetPassword(): void {}

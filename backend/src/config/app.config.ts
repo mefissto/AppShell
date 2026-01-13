@@ -24,5 +24,10 @@ export default registerAs(
     hashSaltRounds: parseInt(process.env.HASH_SALT_ROUNDS as string, 10),
     throttleTtl: parseInt(process.env.THROTTLE_TTL as string, 10),
     throttleLimit: parseInt(process.env.THROTTLE_LIMIT as string, 10),
+    emailVerificationTokenTtl: parseInt(
+      process.env.EMAIL_VERIFICATION_TOKEN_TTL as string,
+      10,
+    ),
+    emailVerificationUrl: process.env.EMAIL_VERIFICATION_URL as string,
   }),
 );

@@ -30,10 +30,12 @@
       "@utils/*": ["src/common/utils/*"],
       "@decorators/*": ["src/common/decorators/*"],
       "@guards/*": ["src/common/guards/*"],
+      "@logger/*": ["src/common/logger/*"],
       "@config/*": ["src/config/*"],
       "@generated/*": ["generated/*"],
       "@database/*": ["src/database/*"],
-      "@modules/*": ["src/modules/*"]
+      "@modules/*": ["src/modules/*"],
+      "@common/*": ["src/common/*"]
     }
   }
 }

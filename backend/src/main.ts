@@ -9,11 +9,14 @@ import { CORS_CONFIG } from '@config/cors.config';
 import { SWAGGER_CONFIG } from '@config/swagger.config';
 import { SWAGGER_DOCS_PATH } from '@constants/constants';
 import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
+import { LoggerService } from '@logger/logger.service';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
 
   /**
    * Helmet helps you secure your Express apps by setting various HTTP headers
@@ -55,6 +58,8 @@ async function bootstrap() {
 
   /** Middleware to parse cookies from incoming requests */
   app.use(cookieParser());
+
+  app.useLogger(await app.resolve(LoggerService));
 
   app.enableCors(CORS_CONFIG);
 

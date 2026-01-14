@@ -1,3 +1,4 @@
+import { LogLevel } from '@nestjs/common';
 import { registerAs } from '@nestjs/config';
 
 import {
@@ -24,6 +25,7 @@ export default registerAs(
     hashSaltRounds: parseInt(process.env.HASH_SALT_ROUNDS as string, 10),
     throttleTtl: parseInt(process.env.THROTTLE_TTL as string, 10),
     throttleLimit: parseInt(process.env.THROTTLE_LIMIT as string, 10),
+    logLevel: process.env.LOG_LEVEL as LogLevel,
     emailVerificationTokenTtl: parseInt(
       process.env.EMAIL_VERIFICATION_TOKEN_TTL as string,
       10,

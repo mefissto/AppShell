@@ -42,6 +42,9 @@ export default Joi.object({
   THROTTLE_LIMIT: Joi.number().integer().positive().required(),
   EMAIL_VERIFICATION_TOKEN_TTL: Joi.number().integer().positive().required(),
   EMAIL_VERIFICATION_URL: Joi.string().uri().required(),
+  LOG_LEVEL: Joi.string()
+    .valid('verbose', 'debug', 'log', 'warn', 'error', 'fatal')
+    .required(),
 
   // DATABASE
   DATABASE_URL: Joi.string().uri().required(),

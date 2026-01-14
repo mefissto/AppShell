@@ -1,3 +1,4 @@
+import { LogLevel } from '@nestjs/common';
 import type { StringValue } from 'ms';
 
 /**
@@ -39,6 +40,7 @@ export interface AppEnvConfig {
   hashSaltRounds: number;
   throttleTtl: number;
   throttleLimit: number;
+  logLevel: LogLevel;
   emailVerificationTokenTtl: number;
   emailVerificationUrl: string;
 }

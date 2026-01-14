@@ -18,6 +18,9 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
+  const logger = await app.resolve(LoggerService);
+  const reflector = app.get(Reflector);
+
   /**
    * Helmet helps you secure your Express apps by setting various HTTP headers
    * Applying helmet as global or registering it must come before other calls to app.use() or setup functions that may call app.use()
@@ -48,18 +51,18 @@ async function bootstrap() {
    * PrismaExceptionFilter will catch any PrismaClientKnownRequestError exceptions
    * and transform them into appropriate HTTP exceptions
    */
-  app.useGlobalFilters(new PrismaExceptionFilter());
+  app.useGlobalFilters(new PrismaExceptionFilter(logger));
 
   /** Global Interceptors
    * ClassSerializerInterceptor will automatically serialize the response objects
    * according to the @Exclude and @Expose decorators defined in the entity classes
    */
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
 
   /** Middleware to parse cookies from incoming requests */
   app.use(cookieParser());
 
-  app.useLogger(await app.resolve(LoggerService));
+  app.useLogger(logger);
 
   app.enableCors(CORS_CONFIG);
 

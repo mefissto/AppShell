@@ -2,8 +2,7 @@ import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
-  HttpStatus,
-  Logger,
+  HttpStatus
 } from '@nestjs/common';
 import {
   DriverAdapterError,
@@ -16,6 +15,7 @@ import {
   ErrorDetails,
   ErrorResponse,
 } from '@interfaces/error-response.interface';
+import { LoggerService } from '@logger/logger.service';
 import { getConstraintFields } from '@utils/mapped-error.utils';
 /**
  * Global exception filter to handle all Prisma errors and convert them to appropriate HTTP responses.
@@ -28,7 +28,9 @@ import { getConstraintFields } from '@utils/mapped-error.utils';
   Prisma.PrismaClientRustPanicError,
 )
 export class PrismaExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(PrismaExceptionFilter.name);
+  constructor(private readonly logger: LoggerService) {
+    this.logger.setContext(PrismaExceptionFilter.name);
+  }
 
   catch(
     exception:

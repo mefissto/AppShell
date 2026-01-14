@@ -62,6 +62,7 @@ model Task {
   status      TaskStatus @default(PENDING)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
 
   user   User   @relation(fields: [userId], references: [id])
   userId String

@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Delete,
+  HttpCode,
+  HttpStatus,
   Post,
   Req,
   Res,
@@ -54,6 +56,7 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
   @ApiBadRequestResponse({ description: 'Validation error.' })
+  @HttpCode(HttpStatus.OK)
   async signIn(
     @CurrentUser() user: UserEntity,
     // passthrough option allows us to use the response object without taking over the response handling
@@ -66,6 +69,7 @@ export class AuthController {
   @ApiOperation({ summary: 'User registration' })
   @ApiCreatedResponse({ description: 'User registered successfully.' })
   @ApiBadRequestResponse({ description: 'Validation error.' })
+  @HttpCode(HttpStatus.CREATED)
   signUp(@Body() signUpDto: SignUpDto): Promise<void> {
     return this.authService.signUp(signUpDto);
   }
@@ -77,6 +81,7 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: 'Invalid or expired verification token.',
   })
+  @HttpCode(HttpStatus.OK)
   verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<void> {
     return this.authService.verifyEmail(verifyEmailDto);
   }
@@ -85,6 +90,7 @@ export class AuthController {
   @StrictAuthThrottle()
   @ApiOperation({ summary: 'Request password reset' })
   @ApiOkResponse({ description: 'Reset process initiated.' })
+  @HttpCode(HttpStatus.OK)
   resetPassword(): void {}
 
   @Post('refresh')
@@ -93,6 +99,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh authentication tokens' })
   @ApiOkResponse({ description: 'Tokens refreshed. Cookies updated.' })
   @ApiUnauthorizedResponse({ description: 'Invalid or expired refresh token.' })
+  @HttpCode(HttpStatus.OK)
   async refreshToken(
     @CurrentUser() user: UserEntity,
     // passthrough option allows us to use the response object without taking over the response handling
@@ -106,6 +113,7 @@ export class AuthController {
   @ApiCookieAuth('Authentication')
   @ApiOperation({ summary: 'Logout user' })
   @ApiOkResponse({ description: 'Logged out. Cookies cleared.' })
+  @HttpCode(HttpStatus.OK)
   async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,

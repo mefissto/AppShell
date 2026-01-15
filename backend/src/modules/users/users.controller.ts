@@ -14,6 +14,7 @@ import {
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -78,6 +79,7 @@ export class UsersController {
   @ApiOkResponse({ description: 'User updated.', type: UserEntity })
   @ApiBadRequestResponse({ description: 'Validation error.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'User not found.' })
   update(
     @Param('id') id: string,
     @Body() userData: UpdateUserDto,
@@ -94,6 +96,7 @@ export class UsersController {
   })
   @ApiNoContentResponse({ description: 'User deleted.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'User not found.' })
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(@Param('id') id: string): Promise<void> {
     return this.usersService.delete(id);

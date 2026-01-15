@@ -14,6 +14,7 @@ import {
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -86,6 +87,7 @@ export class TasksController {
   @ApiOkResponse({ description: 'Task updated.', type: TaskEntity })
   @ApiBadRequestResponse({ description: 'Validation error.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Task not found.' })
   update(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
@@ -103,6 +105,7 @@ export class TasksController {
   })
   @ApiNoContentResponse({ description: 'Task deleted.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Task not found.' })
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(
     @Param('id') id: string,

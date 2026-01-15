@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -7,6 +8,7 @@ import {
 import type { ConfigType } from '@nestjs/config';
 import { Request, Response } from 'express';
 
+import { LoggerService } from '@common/logger/logger.service';
 import appConfig from '@config/app.config';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
@@ -32,7 +34,10 @@ export class AuthService {
     private readonly jwtTokenProvider: JwtTokenProvider,
     private readonly hashingService: HashingService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+    private readonly logger: LoggerService,
+  ) {
+    this.logger.setContext(AuthService.name);
+  }
 
   async signIn(user: UserEntity, response: Response): Promise<void> {
     // TODO: Think about max sessions per user and handle accordingly
@@ -80,7 +85,7 @@ export class AuthService {
     );
 
     if (!isTokenValid || !user) {
-      throw new UnauthorizedException('Invalid email verification token');
+      throw new BadRequestException('Invalid or expired verification token');
     }
 
     await this.usersService.update(user.id, {
@@ -116,6 +121,9 @@ export class AuthService {
     );
 
     if (!user || !user.password) {
+      this.logger.warn(
+        `Login attempt for non-existent user: ${signInDto.email}`,
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -125,6 +133,9 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      this.logger.warn(
+        `Failed login attempt for user: ${signInDto.email} (invalid password)`,
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 

@@ -15,7 +15,7 @@
     "prisma:generate": "npx prisma generate",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
-    "test:watch": "jest --watch",
+    "test:watch": "jest --watch --verbose",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
@@ -98,6 +98,7 @@
       "^@utils/(.*)$": "<rootDir>/common/utils/$1",
       "^@decorators/(.*)$": "<rootDir>/common/decorators/$1",
       "^@guards/(.*)$": "<rootDir>/common/guards/$1",
+      "^@pagination/(.*)$": "<rootDir>/common/pagination/$1",
       "^@config/(.*)$": "<rootDir>/config/$1",
       "^@generated/(.*)$": "<rootDir>/../generated/$1",
       "^@database/(.*)$": "<rootDir>/database/$1",

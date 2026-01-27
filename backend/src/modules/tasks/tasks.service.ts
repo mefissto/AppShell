@@ -1,23 +1,75 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { EntityListRequestBuilder } from '@pagination/builders/entity-list-request.builder';
+import { EntityListResponseDto } from '@pagination/interfaces/entity-list-response.dto';
+import { PaginationService } from '@pagination/services/pagination.service';
 
 import { CreateTaskDto } from './dto/create-task.dto';
+import { TaskListRequestDto } from './dto/task-list-request.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskEntity } from './entities/task.entity';
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paginationService: PaginationService,
+  ) {}
 
   /**
-   * Retrieves all tasks.
-   * @returns An array of TaskEntity.
+   * Retrieves all tasks with pagination, filtering, and sorting.
+   * @returns A paginated response with tasks.
    */
-  async findAll(userId: string): Promise<TaskEntity[]> {
-    return await this.prisma.task
-      .findMany({ where: { userId } })
-      .then((results) => results.map((task) => new TaskEntity(task)));
+  async findAll(
+    taskListRequestDto: TaskListRequestDto,
+    userId: string,
+  ): Promise<EntityListResponseDto<TaskEntity>> {
+    // Build the query using the builder
+    const query = new EntityListRequestBuilder(taskListRequestDto)
+      .addFilter((filter) => {
+        const where: Record<string, unknown> = {
+          userId,
+          deletedAt: null, // Exclude soft-deleted tasks
+        };
+
+        // Add search across multiple fields
+        if (filter.search) {
+          where.OR = [
+            { title: { contains: filter.search, mode: 'insensitive' } },
+            { description: { contains: filter.search, mode: 'insensitive' } },
+          ];
+        }
+
+        // Add title filter if provided (partial match)
+        if (filter.title) {
+          where.title = { contains: filter.title, mode: 'insensitive' };
+        }
+
+        // Add status filter if provided (exact match)
+        if (filter.status) {
+          where.status = filter.status;
+        }
+
+        return where;
+      })
+      .addSort()
+      .addPagination()
+      .build();
+
+    // Execute the query and get total count in parallel
+    const [tasks, total] = await Promise.all([
+      this.prisma.task
+        .findMany(query)
+        .then((results) => results.map((task) => new TaskEntity(task))),
+      this.prisma.task.count({ where: query.where }),
+    ]);
+
+    return this.paginationService.buildResponse(
+      tasks,
+      total,
+      taskListRequestDto,
+    );
   }
 
   /**
@@ -27,7 +79,7 @@ export class TasksService {
    */
   async findOneById(taskId: string, userId: string): Promise<TaskEntity> {
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, userId },
+      where: { id: taskId, userId, deletedAt: null },
     });
 
     if (!task) {
@@ -67,7 +119,7 @@ export class TasksService {
     // Using updateMany to ensure userId is also matched to prevent updating tasks not owned by the user
     // updateMany returns a count of updated records to verify if a task was updated
     const updated = await this.prisma.task.updateMany({
-      where: { id: taskId, userId },
+      where: { id: taskId, userId, deletedAt: null },
       data: updateTaskDto,
     });
 
@@ -76,7 +128,7 @@ export class TasksService {
     }
 
     return await this.prisma.task
-      .findFirstOrThrow({ where: { id: taskId, userId } })
+      .findFirstOrThrow({ where: { id: taskId, userId, deletedAt: null } })
       .then((task) => new TaskEntity(task));
   }
 

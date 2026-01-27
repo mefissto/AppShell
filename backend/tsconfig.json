@@ -31,6 +31,7 @@
       "@decorators/*": ["src/common/decorators/*"],
       "@guards/*": ["src/common/guards/*"],
       "@logger/*": ["src/common/logger/*"],
+      "@pagination/*": ["src/common/pagination/*"],
       "@config/*": ["src/config/*"],
       "@generated/*": ["generated/*"],
       "@database/*": ["src/database/*"],

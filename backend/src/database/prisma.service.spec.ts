@@ -31,7 +31,7 @@ describe('PrismaService', () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
     prismaClientConnectMock.mockResolvedValueOnce(undefined);
 
-    const service = new PrismaService();
+    const service = new PrismaService({} as never);
     await service.onModuleInit();
 
     expect(prismaClientConnectMock).toHaveBeenCalled();
@@ -47,7 +47,7 @@ describe('PrismaService', () => {
       .mockImplementation(() => undefined);
     prismaClientConnectMock.mockRejectedValueOnce(error);
 
-    const service = new PrismaService();
+    const service = new PrismaService({} as never);
     await service.onModuleInit();
 
     expect(prismaClientConnectMock).toHaveBeenCalled();

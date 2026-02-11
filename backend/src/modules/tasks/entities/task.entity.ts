@@ -15,6 +15,6 @@ export class TaskEntity extends BaseEntity {
 
   constructor(partial: Partial<TaskEntity>) {
     super();
-    Object.assign(this, this.filterNullishValues(partial));
+    Object.assign(this, TaskEntity.filterNullishValues(partial));
   }
 }

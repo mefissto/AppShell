@@ -29,6 +29,6 @@ export class UserEntity extends BaseEntity {
 
   constructor(partial: Partial<UserEntity>) {
     super();
-    Object.assign(this, this.filterNullishValues(partial));
+    Object.assign(this, UserEntity.filterNullishValues(partial));
   }
 }

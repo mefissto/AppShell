@@ -93,7 +93,7 @@ describe('UsersController', () => {
       const createUserDto = {
         email: 'test@gmail.com',
         name: 'Test User',
-        password: 'securepassword',
+        password: 'secure password',
       };
       const user = mockUser();
       usersService.create.mockResolvedValueOnce(user);
@@ -108,7 +108,7 @@ describe('UsersController', () => {
       const createUserDto = {
         email: 'test@gmail.com',
         name: 'Test User',
-        password: 'securepassword',
+        password: 'secure password',
       };
       usersService.create.mockRejectedValueOnce(
         new ConflictException('Creation failed'),

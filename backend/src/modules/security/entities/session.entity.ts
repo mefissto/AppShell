@@ -17,6 +17,6 @@ export class SessionEntity extends BaseEntity {
 
   constructor(partial: Partial<SessionEntity>) {
     super();
-    Object.assign(this, this.filterNullishValues(partial));
+    Object.assign(this, SessionEntity.filterNullishValues(partial));
   }
 }

@@ -1,9 +1,28 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
+  "setupFiles": ["reflect-metadata"],
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@constants/(.*)$": "<rootDir>/src/common/constants/$1",
+    "^@enums/(.*)$": "<rootDir>/src/common/enums/$1",
+    "^@interfaces/(.*)$": "<rootDir>/src/common/interfaces/$1",
+    "^@entities/(.*)$": "<rootDir>/src/common/entities/$1",
+    "^@filters/(.*)$": "<rootDir>/src/common/filters/$1",
+    "^@utils/(.*)$": "<rootDir>/src/common/utils/$1",
+    "^@decorators/(.*)$": "<rootDir>/src/common/decorators/$1",
+    "^@guards/(.*)$": "<rootDir>/src/common/guards/$1",
+    "^@pagination/(.*)$": "<rootDir>/src/common/pagination/$1",
+    "^@config/(.*)$": "<rootDir>/src/config/$1",
+    "^@generated/(.*)$": "<rootDir>/generated/$1",
+    "^@database/(.*)$": "<rootDir>/src/database/$1",
+    "^@modules/(.*)$": "<rootDir>/src/modules/$1",
+    "^@logger/(.*)$": "<rootDir>/src/common/logger/$1",
+    "^@common/(.*)$": "<rootDir>/src/common/$1",
+    "^(\\.{1,2}/.*)\\.js$": "$1"
   }
 }

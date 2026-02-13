@@ -8,6 +8,7 @@ export enum EnvironmentModes {
   DEVELOPMENT = 'development',
   PRODUCTION = 'production',
   TEST = 'test',
+  E2E = 'e2e',
 }
 
 /**
@@ -16,7 +17,8 @@ export enum EnvironmentModes {
 export type EnvironmentType =
   | EnvironmentModes.DEVELOPMENT
   | EnvironmentModes.PRODUCTION
-  | EnvironmentModes.TEST;
+  | EnvironmentModes.TEST
+  | EnvironmentModes.E2E;
 
 /**
  * Keys for environment variable configurations

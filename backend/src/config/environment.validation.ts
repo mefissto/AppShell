@@ -35,6 +35,7 @@ export default Joi.object({
       EnvironmentModes.DEVELOPMENT,
       EnvironmentModes.PRODUCTION,
       EnvironmentModes.TEST,
+      EnvironmentModes.E2E,
     )
     .default(EnvironmentModes.DEVELOPMENT),
   HASH_SALT_ROUNDS: Joi.number().integer().min(4).max(31).default(10),

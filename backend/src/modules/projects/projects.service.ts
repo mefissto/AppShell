@@ -1,26 +1,37 @@
 import { Injectable } from '@nestjs/common';
+
+import { UserEntity } from '@modules/users/entities/user.entity';
+
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { ProjectEntity } from './entities/project.entity';
 
 @Injectable()
 export class ProjectsService {
-  create(createProjectDto: CreateProjectDto) {
-    return 'This action adds a new project';
+  async findAll(currentUser: UserEntity): Promise<ProjectEntity[]> {
+    return [];
   }
 
-  findAll() {
-    return `This action returns all projects`;
+  async findOne(id: string, currentUser: UserEntity): Promise<ProjectEntity> {
+    return new ProjectEntity({});
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} project`;
+  async create(
+    createProjectDto: CreateProjectDto,
+    currentUser: UserEntity,
+  ): Promise<ProjectEntity> {
+    return new ProjectEntity({});
   }
 
-  update(id: number, updateProjectDto: UpdateProjectDto) {
-    return `This action updates a #${id} project`;
+  async update(
+    id: string,
+    updateProjectDto: UpdateProjectDto,
+    currentUser: UserEntity,
+  ): Promise<ProjectEntity> {
+    return new ProjectEntity({});
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} project`;
+  async remove(id: string, currentUser: UserEntity): Promise<void> {
+    return;
   }
 }

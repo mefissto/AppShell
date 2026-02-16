@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -55,7 +57,10 @@ export class ProjectsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
-  @ApiOkResponse({ description: 'Project created successfully' })
+  @ApiCreatedResponse({
+    description: 'Project created successfully',
+    type: ProjectEntity,
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   create(
     @Body() createProjectDto: CreateProjectDto,
@@ -66,7 +71,10 @@ export class ProjectsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a project by ID' })
-  @ApiOkResponse({ description: 'Project updated successfully' })
+  @ApiOkResponse({
+    description: 'Project updated successfully',
+    type: ProjectEntity,
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Project not found.' })
   update(
@@ -79,7 +87,7 @@ export class ProjectsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a project by ID' })
-  @ApiOkResponse({ description: 'Project deleted successfully' })
+  @ApiNoContentResponse({ description: 'Project deleted successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Project not found.' })
   @HttpCode(HttpStatus.NO_CONTENT)

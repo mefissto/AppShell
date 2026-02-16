@@ -13,6 +13,8 @@ export class ProjectsService {
   async findAll(userId: string): Promise<ProjectEntity[]> {
     const projects = await this.prisma.project.findMany({
       where: { ownerId: userId },
+
+      orderBy: { updatedAt: 'desc' },
     });
 
     return projects.map((project) => new ProjectEntity(project));
@@ -24,7 +26,7 @@ export class ProjectsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found.');
+      throw new NotFoundException(`Project with ID ${id} not found`);
     }
 
     return new ProjectEntity(project);
@@ -49,44 +51,29 @@ export class ProjectsService {
     updateProjectDto: UpdateProjectDto,
     userId: string,
   ): Promise<ProjectEntity> {
-    const project = await this.prisma.project.findFirst({
+    const updated = await this.prisma.project.updateMany({
       where: { id, ownerId: userId },
+      data: updateProjectDto,
     });
 
-    if (!project) {
-      throw new NotFoundException('Project not found.');
+    if (updated.count === 0) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
     }
 
-    // If the update includes a new ownerId, verify that the new owner exists
-    if (updateProjectDto.ownerId) {
-      const newOwner = await this.prisma.user.findUnique({
-        where: { id: updateProjectDto.ownerId },
-      });
-
-      if (!newOwner) {
-        throw new NotFoundException('New owner not found.');
-      }
-    }
-
-    const updatedProject = await this.prisma.project.update({
-      where: { id },
-      data: updateProjectDto,
+    const updatedProject = await this.prisma.project.findFirstOrThrow({
+      where: { id, ownerId: userId },
     });
 
     return new ProjectEntity(updatedProject);
   }
 
   async remove(id: string, userId: string): Promise<void> {
-    const project = await this.prisma.project.findFirst({
+    const deleted = await this.prisma.project.deleteMany({
       where: { id, ownerId: userId },
     });
 
-    if (!project) {
-      throw new NotFoundException('Project not found.');
+    if (deleted.count === 0) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
     }
-
-    await this.prisma.project.delete({
-      where: { id },
-    });
   }
 }

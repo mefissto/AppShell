@@ -1,3 +1,4 @@
+import { Prisma } from '../../generated/prisma';
 import { PrismaService } from '../../src/database/prisma.service';
 
 export const cleanupUserByEmail = async (
@@ -15,16 +16,23 @@ export const cleanupUserByEmail = async (
 
   const userIds = users.map((user) => user.id);
 
-  await prisma.$transaction([
-    prisma.session.deleteMany({
-      where: {
-        userId: {
-          in: userIds,
-        },
+  // Use raw SQL here to hard-delete tasks in tests.
+  // Prisma task deleteMany is extended to soft-delete, which can leave FK-linked rows
+  // and break user cleanup in e2e teardown.
+  await prisma.$executeRaw`
+    DELETE FROM "Task"
+    WHERE "userId" IN (${Prisma.join(userIds)})
+  `;
+
+  await prisma.session.deleteMany({
+    where: {
+      userId: {
+        in: userIds,
       },
-    }),
-    prisma.user.deleteMany({ where: { id: { in: userIds } } }),
-  ]);
+    },
+  });
+
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 };
 
 export const disconnectPrisma = async (

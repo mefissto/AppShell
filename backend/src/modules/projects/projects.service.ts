@@ -3,6 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
 
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateOwnerDto } from './dto/update-owner.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectEntity } from './entities/project.entity';
 
@@ -62,6 +63,37 @@ export class ProjectsService {
 
     const updatedProject = await this.prisma.project.findFirstOrThrow({
       where: { id, ownerId: userId },
+    });
+
+    return new ProjectEntity(updatedProject);
+  }
+
+  async updateOwner(
+    id: string,
+    updateOwnerDto: UpdateOwnerDto,
+    userId: string,
+  ): Promise<ProjectEntity> {
+    const newOwner = await this.prisma.user.findUnique({
+      where: { id: updateOwnerDto.ownerId },
+    });
+
+    if (!newOwner) {
+      throw new NotFoundException(
+        `User with ID ${updateOwnerDto.ownerId} not found`,
+      );
+    }
+
+    const updated = await this.prisma.project.updateMany({
+      where: { id, ownerId: userId },
+      data: { ownerId: updateOwnerDto.ownerId },
+    });
+
+    if (updated.count === 0) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+
+    const updatedProject = await this.prisma.project.findFirstOrThrow({
+      where: { id, ownerId: updateOwnerDto.ownerId },
     });
 
     return new ProjectEntity(updatedProject);

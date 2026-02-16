@@ -13,6 +13,7 @@ describe('ProjectsController', () => {
     findOne: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
+    updateOwner: jest.Mock;
     remove: jest.Mock;
   };
 
@@ -37,6 +38,7 @@ describe('ProjectsController', () => {
       findOne: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateOwner: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -147,6 +149,31 @@ describe('ProjectsController', () => {
         'proj-1',
         'cm1234567890abcdefghijklmn',
       );
+    });
+  });
+
+  describe('updateOwner', () => {
+    it('should update project owner by id for current user', async () => {
+      const updatedProject = mockProject({
+        ownerId: 'cm9999999999abcdefghijklmn',
+      });
+      const updateOwnerDto = {
+        ownerId: 'cm9999999999abcdefghijklmn',
+      };
+      projectsService.updateOwner.mockResolvedValueOnce(updatedProject);
+
+      const result = await controller.updateOwner(
+        'proj-1',
+        updateOwnerDto,
+        mockCurrentUser(),
+      );
+
+      expect(projectsService.updateOwner).toHaveBeenCalledWith(
+        'proj-1',
+        updateOwnerDto,
+        'cm1234567890abcdefghijklmn',
+      );
+      expect(result).toEqual(updatedProject);
     });
   });
 });

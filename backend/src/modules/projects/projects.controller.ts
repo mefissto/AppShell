@@ -25,6 +25,7 @@ import { ApiRoutes } from '@enums/api-routes';
 import { UserEntity } from '@modules/users/entities/user.entity';
 
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateOwnerDto } from './dto/update-owner.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectEntity } from './entities/project.entity';
 import { ProjectsService } from './projects.service';
@@ -83,6 +84,22 @@ export class ProjectsController {
     @CurrentUser() currentUser: UserEntity,
   ): Promise<ProjectEntity> {
     return this.projectsService.update(id, updateProjectDto, currentUser.id);
+  }
+
+  @Patch(':id/owner')
+  @ApiOperation({ summary: 'Update the owner of a project by ID' })
+  @ApiOkResponse({
+    description: 'Project owner updated successfully',
+    type: ProjectEntity,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Project not found.' })
+  updateOwner(
+    @Param('id') id: string,
+    @Body() updateOwnerDto: UpdateOwnerDto,
+    @CurrentUser() currentUser: UserEntity,
+  ): Promise<ProjectEntity> {
+    return this.projectsService.updateOwner(id, updateOwnerDto, currentUser.id);
   }
 
   @Delete(':id')

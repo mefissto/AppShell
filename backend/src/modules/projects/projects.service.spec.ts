@@ -17,6 +17,9 @@ describe('ProjectsService', () => {
       updateMany: jest.Mock;
       deleteMany: jest.Mock;
     };
+    user: {
+      findUnique: jest.Mock;
+    };
   };
 
   const mockProject = (overrides: Partial<ProjectEntity> = {}) => ({
@@ -40,6 +43,9 @@ describe('ProjectsService', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         deleteMany: jest.fn(),
+      },
+      user: {
+        findUnique: jest.fn(),
       },
     };
 
@@ -192,6 +198,77 @@ describe('ProjectsService', () => {
       expect(prisma.project.deleteMany).toHaveBeenCalledWith({
         where: { id: 'missing', ownerId: 'cm1234567890abcdefghijklmn' },
       });
+    });
+  });
+
+  describe('updateOwner', () => {
+    it('should throw NotFoundException when new owner does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateOwner(
+          'proj-1',
+          { ownerId: 'cm9999999999abcdefghijklmn' },
+          'cm1234567890abcdefghijklmn',
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'cm9999999999abcdefghijklmn' },
+      });
+      expect(prisma.project.updateMany).not.toHaveBeenCalled();
+      expect(prisma.project.findFirstOrThrow).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when project is not found for current owner', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce({
+        id: 'cm9999999999abcdefghijklmn',
+      });
+      prisma.project.updateMany.mockResolvedValueOnce({ count: 0 });
+
+      await expect(
+        service.updateOwner(
+          'missing-project',
+          { ownerId: 'cm9999999999abcdefghijklmn' },
+          'cm1234567890abcdefghijklmn',
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prisma.project.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'missing-project',
+          ownerId: 'cm1234567890abcdefghijklmn',
+        },
+        data: { ownerId: 'cm9999999999abcdefghijklmn' },
+      });
+      expect(prisma.project.findFirstOrThrow).not.toHaveBeenCalled();
+    });
+
+    it('should update owner and return updated project', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce({
+        id: 'cm9999999999abcdefghijklmn',
+      });
+      prisma.project.updateMany.mockResolvedValueOnce({ count: 1 });
+      const updated = mockProject({ ownerId: 'cm9999999999abcdefghijklmn' });
+      prisma.project.findFirstOrThrow.mockResolvedValueOnce(updated);
+
+      const result = await service.updateOwner(
+        'proj-1',
+        { ownerId: 'cm9999999999abcdefghijklmn' },
+        'cm1234567890abcdefghijklmn',
+      );
+
+      expect(prisma.project.updateMany).toHaveBeenCalledWith({
+        where: { id: 'proj-1', ownerId: 'cm1234567890abcdefghijklmn' },
+        data: { ownerId: 'cm9999999999abcdefghijklmn' },
+      });
+      expect(prisma.project.findFirstOrThrow).toHaveBeenCalledWith({
+        where: { id: 'proj-1', ownerId: 'cm9999999999abcdefghijklmn' },
+      });
+      expect(result).toBeInstanceOf(ProjectEntity);
+      expect(result).toEqual(
+        expect.objectContaining({ ownerId: 'cm9999999999abcdefghijklmn' }),
+      );
     });
   });
 });

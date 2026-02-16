@@ -8,6 +8,7 @@ import { ConfigModule } from '@config/config.module';
 import { DatabaseModule } from '@database/database.module';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { LoggerModule } from '@logger/logger.module';
+import { AccountPreferencesModule } from '@modules/account-preferences/account-preferences.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { ProjectsModule } from '@modules/projects/projects.module';
@@ -37,6 +38,7 @@ import { UsersModule } from '@modules/users/users.module';
     TasksModule,
     NotificationsModule,
     ProjectsModule,
+    AccountPreferencesModule,
   ],
   providers: [
     {

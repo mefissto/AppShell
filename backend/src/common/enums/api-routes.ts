@@ -3,4 +3,6 @@ export enum ApiRoutes {
   USERS = 'users',
   TASKS = 'tasks',
   PROJECTS = 'projects',
+  PROFILE = 'me/profile',
+  SETTINGS = 'me/settings',
 }

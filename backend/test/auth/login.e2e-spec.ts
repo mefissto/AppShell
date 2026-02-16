@@ -2,54 +2,54 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 
-import { PrismaService } from '../../src/database/prisma.service';
-import { UsersService } from '../../src/modules/users/users.service';
-import {
-    cleanupUserByEmail,
-    closeTestApp,
-    createTestApp,
-    disconnectPrisma,
-    hasAuthCookies,
-    loginAndGetCookies,
-} from '../helpers';
+import { PrismaService } from '@database/prisma.service';
+import { UsersService } from '@modules/users/users.service';
+
+import * as helpers from '../helpers';
 
 describe('POST /auth/login (e2e)', () => {
   let app: INestApplication<App>;
   let usersService: UsersService;
   let prisma: PrismaService;
-
-  const testUser = {
-    name: 'E2E User',
-    email: 'e2e.user@example.com',
-    password: 'StrongP@ssw0rd!',
-  };
+  let cleanupRegistry: helpers.CleanupRegistry;
+  let testUser: helpers.TestUserInput;
 
   beforeAll(async () => {
-    const testApp = await createTestApp();
+    const testApp = await helpers.createTestApp();
     app = testApp.app;
     usersService = app.get(UsersService);
     prisma = app.get(PrismaService);
+  });
+
+  beforeEach(async () => {
+    testUser = helpers.createTestUserInput('auth-login');
+    cleanupRegistry = new helpers.CleanupRegistry();
+
+    cleanupRegistry.register(async () => {
+      await helpers.cleanupUserByEmail(prisma, testUser.email);
+    });
 
     // Create a real user so LocalAuthGuard can validate credentials for the login test.
-    await cleanupUserByEmail(prisma, testUser.email);
     await usersService.create(testUser);
   });
 
+  afterEach(async () => {
+    await cleanupRegistry.run();
+  });
+
   afterAll(async () => {
-    // Clean up test data to keep the DB deterministic across runs.
-    await cleanupUserByEmail(prisma, testUser.email);
-    await disconnectPrisma(prisma);
-    await closeTestApp(app);
+    await helpers.disconnectPrisma(prisma);
+    await helpers.closeTestApp(app);
   });
 
   it('returns auth cookies for valid credentials', async () => {
-    const cookies = await loginAndGetCookies(
+    const cookies = await helpers.loginAndGetCookies(
       app,
       testUser.email,
       testUser.password,
     );
 
-    expect(hasAuthCookies(cookies)).toBe(true);
+    expect(helpers.hasAuthCookies(cookies)).toBe(true);
   });
 
   it('returns 401 for invalid credentials', async () => {

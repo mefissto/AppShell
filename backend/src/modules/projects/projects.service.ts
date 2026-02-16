@@ -11,13 +11,11 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(userId: string): Promise<ProjectEntity[]> {
-    return this.prisma.project
-      .findMany({
-        where: { ownerId: userId },
-      })
-      .then((projects) =>
-        projects.map((project) => new ProjectEntity(project)),
-      );
+    const projects = await this.prisma.project.findMany({
+      where: { ownerId: userId },
+    });
+
+    return projects.map((project) => new ProjectEntity(project));
   }
 
   async findOne(id: string, userId: string): Promise<ProjectEntity> {
@@ -36,14 +34,14 @@ export class ProjectsService {
     createProjectDto: CreateProjectDto,
     userId: string,
   ): Promise<ProjectEntity> {
-    return this.prisma.project
-      .create({
-        data: {
-          ...createProjectDto,
-          ownerId: userId,
-        },
-      })
-      .then((project) => new ProjectEntity(project));
+    const project = await this.prisma.project.create({
+      data: {
+        ...createProjectDto,
+        ownerId: userId,
+      },
+    });
+
+    return new ProjectEntity(project);
   }
 
   async update(

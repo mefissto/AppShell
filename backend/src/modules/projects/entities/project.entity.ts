@@ -12,7 +12,6 @@ export class ProjectEntity extends BaseEntity {
 
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
 
   constructor(partial: Partial<ProjectEntity>) {
     super();

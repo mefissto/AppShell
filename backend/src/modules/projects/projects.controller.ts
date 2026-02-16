@@ -38,7 +38,7 @@ export class ProjectsController {
   @ApiOkResponse({ description: 'List of projects' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   findAll(@CurrentUser() currentUser: UserEntity): Promise<ProjectEntity[]> {
-    return this.projectsService.findAll(currentUser);
+    return this.projectsService.findAll(currentUser.id);
   }
 
   @Get(':id')
@@ -50,7 +50,7 @@ export class ProjectsController {
     @Param('id') id: string,
     @CurrentUser() currentUser: UserEntity,
   ): Promise<ProjectEntity> {
-    return this.projectsService.findOne(id, currentUser);
+    return this.projectsService.findOne(id, currentUser.id);
   }
 
   @Post()
@@ -61,7 +61,7 @@ export class ProjectsController {
     @Body() createProjectDto: CreateProjectDto,
     @CurrentUser() currentUser: UserEntity,
   ): Promise<ProjectEntity> {
-    return this.projectsService.create(createProjectDto, currentUser);
+    return this.projectsService.create(createProjectDto, currentUser.id);
   }
 
   @Patch(':id')
@@ -74,7 +74,7 @@ export class ProjectsController {
     @Body() updateProjectDto: UpdateProjectDto,
     @CurrentUser() currentUser: UserEntity,
   ): Promise<ProjectEntity> {
-    return this.projectsService.update(id, updateProjectDto, currentUser);
+    return this.projectsService.update(id, updateProjectDto, currentUser.id);
   }
 
   @Delete(':id')
@@ -87,6 +87,6 @@ export class ProjectsController {
     @Param('id') id: string,
     @CurrentUser() currentUser: UserEntity,
   ): Promise<void> {
-    return this.projectsService.remove(id, currentUser);
+    return this.projectsService.remove(id, currentUser.id);
   }
 }

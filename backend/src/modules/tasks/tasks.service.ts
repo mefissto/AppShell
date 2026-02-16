@@ -5,6 +5,7 @@ import { EntityListRequestBuilder } from '@pagination/builders/entity-list-reque
 import { EntityListResponseDto } from '@pagination/interfaces/entity-list-response.dto';
 import { PaginationService } from '@pagination/services/pagination.service';
 
+import { AssignToProjectDto } from './dto/assign-to-project.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { TaskListRequestDto } from './dto/task-list-request.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -129,6 +130,49 @@ export class TasksService {
 
     return await this.prisma.task
       .findFirstOrThrow({ where: { id: taskId, userId, deletedAt: null } })
+      .then((task) => new TaskEntity(task));
+  }
+
+  async assignToProject(
+    id: string,
+    assignToProjectDto: AssignToProjectDto,
+    userId: string,
+  ): Promise<TaskEntity> {
+    // Using updateMany to ensure userId is also matched to prevent updating tasks not owned by the user
+    // updateMany returns a count of updated records to verify if a task was updated
+
+    const task = await this.prisma.task.findFirst({
+      where: { id, userId, deletedAt: null },
+    });
+
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+
+    // If projectId is provided, verify that the project exists and belongs to the user
+    if (assignToProjectDto.projectId) {
+      const project = await this.prisma.project.findFirst({
+        where: { id: assignToProjectDto.projectId, ownerId: userId },
+      });
+
+      if (!project) {
+        throw new NotFoundException(
+          `Project with ID ${assignToProjectDto.projectId} not found`,
+        );
+      }
+    }
+
+    const updated = await this.prisma.task.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { projectId: assignToProjectDto.projectId },
+    });
+
+    if (updated.count === 0) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+
+    return await this.prisma.task
+      .findFirstOrThrow({ where: { id, userId, deletedAt: null } })
       .then((task) => new TaskEntity(task));
   }
 

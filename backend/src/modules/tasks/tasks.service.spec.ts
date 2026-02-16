@@ -21,6 +21,9 @@ describe('TasksService', () => {
       findFirstOrThrow: jest.Mock;
       deleteMany: jest.Mock;
     };
+    project: {
+      findFirst: jest.Mock;
+    };
   };
   let paginationService: { buildResponse: jest.Mock };
 
@@ -45,6 +48,9 @@ describe('TasksService', () => {
         updateMany: jest.fn(),
         findFirstOrThrow: jest.fn(),
         deleteMany: jest.fn(),
+      },
+      project: {
+        findFirst: jest.fn(),
       },
     };
     paginationService = { buildResponse: jest.fn() };
@@ -218,6 +224,116 @@ describe('TasksService', () => {
       await expect(service.delete('missing', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('assignToProject', () => {
+    it('should assign task to a project and return updated entity', async () => {
+      const task = mockTask();
+      const updatedTask = { ...task, projectId: 'c1234567890abcdef12345678' };
+
+      prisma.task.findFirst.mockResolvedValueOnce(task);
+      prisma.project.findFirst.mockResolvedValueOnce({
+        id: 'c1234567890abcdef12345678',
+        ownerId: 'user-1',
+      });
+      prisma.task.updateMany.mockResolvedValueOnce({ count: 1 });
+      prisma.task.findFirstOrThrow.mockResolvedValueOnce(updatedTask);
+
+      const result = await service.assignToProject(
+        'task-1',
+        { projectId: 'c1234567890abcdef12345678' },
+        'user-1',
+      );
+
+      expect(prisma.task.findFirst).toHaveBeenCalledWith({
+        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+      });
+      expect(prisma.project.findFirst).toHaveBeenCalledWith({
+        where: { id: 'c1234567890abcdef12345678', ownerId: 'user-1' },
+      });
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+        data: { projectId: 'c1234567890abcdef12345678' },
+      });
+      expect(prisma.task.findFirstOrThrow).toHaveBeenCalledWith({
+        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+      });
+      expect(result).toBeInstanceOf(TaskEntity);
+    });
+
+    it('should unassign task from project when projectId is null', async () => {
+      const task = mockTask();
+      const updatedTask = { ...task, projectId: null };
+
+      prisma.task.findFirst.mockResolvedValueOnce(task);
+      prisma.task.updateMany.mockResolvedValueOnce({ count: 1 });
+      prisma.task.findFirstOrThrow.mockResolvedValueOnce(updatedTask);
+
+      const result = await service.assignToProject(
+        'task-1',
+        { projectId: null },
+        'user-1',
+      );
+
+      expect(prisma.project.findFirst).not.toHaveBeenCalled();
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+        data: { projectId: null },
+      });
+      expect(result).toBeInstanceOf(TaskEntity);
+    });
+
+    it('should throw when task is not found before assignment', async () => {
+      prisma.task.findFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.assignToProject(
+          'missing',
+          { projectId: 'c1234567890abcdef12345678' },
+          'user-1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prisma.project.findFirst).not.toHaveBeenCalled();
+      expect(prisma.task.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('should throw when project is not found or not owned by user', async () => {
+      prisma.task.findFirst.mockResolvedValueOnce(mockTask());
+      prisma.project.findFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.assignToProject(
+          'task-1',
+          { projectId: 'c1234567890abcdef12345678' },
+          'user-1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prisma.project.findFirst).toHaveBeenCalledWith({
+        where: { id: 'c1234567890abcdef12345678', ownerId: 'user-1' },
+      });
+      expect(prisma.task.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('should throw when task updateMany affects no rows', async () => {
+      prisma.task.findFirst.mockResolvedValueOnce(mockTask());
+      prisma.project.findFirst.mockResolvedValueOnce({
+        id: 'c1234567890abcdef12345678',
+        ownerId: 'user-1',
+      });
+      prisma.task.updateMany.mockResolvedValueOnce({ count: 0 });
+
+      await expect(
+        service.assignToProject(
+          'task-1',
+          { projectId: 'c1234567890abcdef12345678' },
+          'user-1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prisma.task.findFirstOrThrow).not.toHaveBeenCalled();
     });
   });
 });

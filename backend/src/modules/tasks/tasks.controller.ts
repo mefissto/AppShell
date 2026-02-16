@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
@@ -31,6 +32,7 @@ import { ApiRoutes } from '@enums/api-routes';
 import { UserEntity } from '@modules/users/entities/user.entity';
 import { EntityListResponseDto } from '@pagination/interfaces/entity-list-response.dto';
 
+import { AssignToProjectDto } from './dto/assign-to-project.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { TaskListRequestDto } from './dto/task-list-request.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -156,6 +158,30 @@ export class TasksController {
     @CurrentUser() currentUser: UserEntity,
   ): Promise<TaskEntity> {
     return this.tasksService.update(id, updateTaskDto, currentUser.id);
+  }
+
+  @Patch(':id/project')
+  @ApiOperation({ summary: 'Assign a task to a project' })
+  @ApiParam({
+    name: 'id',
+    description: 'Task ID',
+    example: 'c0a8012b-1234-5678-9abc-def012345678',
+  })
+  @ApiBody({ type: AssignToProjectDto })
+  @ApiOkResponse({ description: 'Task updated.', type: TaskEntity })
+  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'Task or project not found.' })
+  assignToProject(
+    @Param('id') id: string,
+    @Body() assignToProjectDto: AssignToProjectDto,
+    @CurrentUser() currentUser: UserEntity,
+  ): Promise<TaskEntity> {
+    return this.tasksService.assignToProject(
+      id,
+      assignToProjectDto,
+      currentUser.id,
+    );
   }
 
   @Delete(':id')

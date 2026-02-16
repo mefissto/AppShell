@@ -12,6 +12,7 @@ describe('TasksController', () => {
     findOneById: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
+    assignToProject: jest.Mock;
     delete: jest.Mock;
   };
 
@@ -38,6 +39,7 @@ describe('TasksController', () => {
       findOneById: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      assignToProject: jest.fn(),
       delete: jest.fn(),
     };
 
@@ -221,6 +223,60 @@ describe('TasksController', () => {
         NotFoundException,
       );
       expect(tasksService.delete).toHaveBeenCalledWith('t1', user.id);
+    });
+  });
+
+  describe('assignToProject', () => {
+    it('should assign task to project', async () => {
+      const user = mockCurrentUser();
+      const task = { ...mockTask(), projectId: 'c1234567890abcdef12345678' };
+      const dto = { projectId: 'c1234567890abcdef12345678' };
+
+      tasksService.assignToProject.mockResolvedValueOnce(task);
+
+      const result = await controller.assignToProject('t1', dto, user);
+
+      expect(tasksService.assignToProject).toHaveBeenCalledWith(
+        't1',
+        dto,
+        user.id,
+      );
+      expect(result).toEqual(task);
+    });
+
+    it('should unassign task from project with null projectId', async () => {
+      const user = mockCurrentUser();
+      const task = { ...mockTask(), projectId: null };
+      const dto = { projectId: null };
+
+      tasksService.assignToProject.mockResolvedValueOnce(task);
+
+      const result = await controller.assignToProject('t1', dto, user);
+
+      expect(tasksService.assignToProject).toHaveBeenCalledWith(
+        't1',
+        dto,
+        user.id,
+      );
+      expect(result).toEqual(task);
+    });
+
+    it('should throw NotFoundException when task or project is not found', async () => {
+      const user = mockCurrentUser();
+      const dto = { projectId: 'c1234567890abcdef12345678' };
+
+      tasksService.assignToProject.mockRejectedValueOnce(
+        new NotFoundException('Task or project not found'),
+      );
+
+      await expect(controller.assignToProject('t1', dto, user)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(tasksService.assignToProject).toHaveBeenCalledWith(
+        't1',
+        dto,
+        user.id,
+      );
     });
   });
 });

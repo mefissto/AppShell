@@ -1,7 +1,8 @@
+import { ThemePreference } from '@generated/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { NotificationSettingsDto } from './dtos/notification-settings.dto';
-import { ThemePreference, UpdateSettingsDto } from './dtos/update-settings.dto';
+import { UpdateSettingsDto } from './dtos/update-settings.dto';
 import { SettingsEntity } from './entities/settings.entity';
 import type { NotificationPreferencesPort } from './ports/notification-preferences.port';
 import { NOTIFICATION_PREFERENCES_PORT } from './ports/notification-preferences.port';

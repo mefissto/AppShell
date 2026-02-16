@@ -27,9 +27,9 @@ model Session {
   ipAddress    String?
   userAgent    String?
   deviceName   String?
+  userId       String // Foreign key to User model
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String // Foreign key to User model
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([id, userId])
 }
@@ -48,9 +48,11 @@ model User {
   emailVerificationToken          String?   @unique
   emailVerificationTokenExpiresAt DateTime?
 
-  sessions Session[]
-  tasks    Task[]
-  projects Project[]
+  sessions     Session[]
+  tasks        Task[]
+  projects     Project[]
+  userSettings UserSettings?
+  userProfile  UserProfile?
 }
 
 // ===================
@@ -64,11 +66,11 @@ model Task {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   deletedAt   DateTime?
+  userId      String
+  projectId   String?
 
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  project   Project? @relation(fields: [projectId], references: [id])
-  projectId String?
+  user    User     @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
 
   @@index([id, userId])
 }
@@ -83,13 +85,48 @@ enum TaskStatus {
 // Project
 // ===================
 model Project {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerId     String
 
-  owner   User   @relation(fields: [ownerId], references: [id])
-  ownerId String
-  tasks   Task[]
+  owner User   @relation(fields: [ownerId], references: [id])
+  tasks Task[]
+}
+
+// ===================
+// Account Preferences
+// ===================
+model UserSettings {
+  id                        String          @id @default(cuid())
+  userId                    String          @unique
+  theme                     ThemePreference @default(SYSTEM)
+  notificationsEnabled      Boolean         @default(true)
+  emailNotificationsEnabled Boolean         @default(true)
+  pushNotificationsEnabled  Boolean         @default(true)
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+model UserProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  firstName   String?
+  lastName    String?
+  displayName String?
+  timezone    String  @default("UTC")
+  language    String  @default("en")
+  avatarUrl   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -1,4 +1,4 @@
-import { ThemePreference } from '../dtos/update-settings.dto';
+import { ThemePreference } from '@generated/prisma';
 
 export class SettingsEntity {
   userId: string;

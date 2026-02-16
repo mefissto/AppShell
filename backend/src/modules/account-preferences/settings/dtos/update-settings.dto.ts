@@ -1,11 +1,6 @@
+import { ThemePreference } from '@generated/prisma';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
-
-export enum ThemePreference {
-  LIGHT = 'light',
-  DARK = 'dark',
-  SYSTEM = 'system',
-}
 
 export class UpdateSettingsDto {
   @ApiPropertyOptional({

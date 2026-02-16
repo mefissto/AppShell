@@ -50,6 +50,7 @@ model User {
 
   sessions Session[]
   tasks    Task[]
+  projects Project[]
 }
 
 // ===================
@@ -64,8 +65,10 @@ model Task {
   updatedAt   DateTime   @updatedAt
   deletedAt   DateTime?
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
 
   @@index([id, userId])
 }
@@ -74,4 +77,20 @@ enum TaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+}
+
+// ===================
+// Project
+// ===================
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String
+  tasks   Task[]
 }

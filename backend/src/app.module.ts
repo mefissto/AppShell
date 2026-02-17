@@ -3,6 +3,7 @@ import { ConfigType } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { AlsModule } from '@common/async-local-storage/async-local-storage.module';
 import appConfig from '@config/app.config';
 import { ConfigModule } from '@config/config.module';
 import { DatabaseModule } from '@database/database.module';
@@ -18,6 +19,7 @@ import { UsersModule } from '@modules/users/users.module';
 
 @Module({
   imports: [
+    AlsModule, //* AsyncLocalStorage module should be imported before any modules that use it (e.g. Logger) to ensure the interceptor is applied globally
     ThrottlerModule.forRootAsync({
       useFactory: (config: ConfigType<typeof appConfig>) => [
         // TODO: Different throttling strategies per route?
@@ -34,6 +36,8 @@ import { UsersModule } from '@modules/users/users.module';
     ConfigModule,
     DatabaseModule,
     LoggerModule,
+
+    // * Feature modules
     AuthModule,
     UsersModule,
     TasksModule,

@@ -1,12 +1,13 @@
 import {
-    ConsoleLogger,
-    Inject,
-    Injectable,
-    LoggerService as NestLoggerService,
-    Scope,
+  ConsoleLogger,
+  Inject,
+  Injectable,
+  LoggerService as NestLoggerService,
+  Scope,
 } from '@nestjs/common';
 import { type ConfigType } from '@nestjs/config';
 
+import { AsyncLocalStorageService } from '@common/async-local-storage/async-local-storage.service';
 import appConfig from '@config/app.config';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 
@@ -23,11 +24,19 @@ export class LoggerService extends ConsoleLogger implements NestLoggerService {
   constructor(
     @Inject(appConfig.KEY)
     private readonly config: ConfigType<typeof appConfig>,
+    private readonly alsService: AsyncLocalStorageService,
   ) {
     super({
       json: config.env === EnvironmentModes.PRODUCTION,
       prefix: config.name,
       logLevels: [config.logLevel],
     });
+  }
+
+  log<T = unknown>(msg: T, context?: string) {
+    const requestId = this.alsService.getRequestId();
+    const message = requestId ? `${requestId} ${msg}` : msg;
+
+    super.log(message, context || this.context);
   }
 }

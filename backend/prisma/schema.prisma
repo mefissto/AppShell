@@ -119,14 +119,16 @@ enum ThemePreference {
 }
 
 model UserProfile {
-  id          String  @id @default(cuid())
-  userId      String  @unique
+  id          String   @id @default(cuid())
+  userId      String   @unique
   firstName   String?
   lastName    String?
   displayName String?
-  timezone    String  @default("UTC")
-  language    String  @default("en")
+  timezone    String   @default("UTC")
+  language    String   @default("en")
   avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

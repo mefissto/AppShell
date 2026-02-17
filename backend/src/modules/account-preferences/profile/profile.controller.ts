@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import {
-    ApiBadRequestResponse,
-    ApiCookieAuth,
-    ApiOkResponse,
-    ApiOperation,
-    ApiTags,
-    ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiCookieAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '@decorators/current-user.decorator';
@@ -32,7 +32,11 @@ export class ProfileController {
     type: ProfileEntity,
   })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
-  getProfile(@CurrentUser() currentUser: UserEntity): Promise<ProfileEntity> {
+  getProfile(
+    @CurrentUser() currentUser: UserEntity,
+    @Req() req: Request,
+  ): Promise<ProfileEntity> {
+    console.log('Request:', req); // Debug log for headers
     return this.profileService.getByUserId(currentUser.id);
   }
 

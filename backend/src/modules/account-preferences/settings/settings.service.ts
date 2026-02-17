@@ -1,6 +1,7 @@
-import { ThemePreference } from '@generated/prisma';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
+import { PrismaService } from '@database/prisma.service';
+import { DEFAULT_SETTINGS } from './constants/default-settings.const';
 import { NotificationSettingsDto } from './dtos/notification-settings.dto';
 import { UpdateSettingsDto } from './dtos/update-settings.dto';
 import { SettingsEntity } from './entities/settings.entity';
@@ -18,36 +19,68 @@ export class SettingsService {
   constructor(
     @Inject(NOTIFICATION_PREFERENCES_PORT)
     private readonly notificationPreferences: NotificationPreferencesPort,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getByUserId(userId: string): Promise<SettingsEntity> {
-    return {
-      userId,
-      theme: ThemePreference.SYSTEM,
-      notificationsEnabled: true,
-      emailNotificationsEnabled: true,
-      pushNotificationsEnabled: false,
-    };
+    const settings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+    });
+
+    if (settings) {
+      return new SettingsEntity(settings);
+    }
+
+    return this.prisma.userSettings
+      .create({
+        data: {
+          userId,
+          ...DEFAULT_SETTINGS,
+        },
+      })
+      .then((created) => new SettingsEntity(created));
   }
 
   async updateByUserId(
     userId: string,
     dto: UpdateSettingsDto,
   ): Promise<SettingsEntity> {
-    const notificationSettings: NotificationSettingsDto = {
-      email: dto.emailNotificationsEnabled,
-      push: dto.pushNotificationsEnabled,
-      inApp: dto.notificationsEnabled,
-    };
+    const existingSettings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+    });
 
+    if (!existingSettings) {
+      throw new NotFoundException('User settings not found');
+    }
+
+    const settingsEntity = new SettingsEntity(existingSettings);
+    const notificationSettings = this.getNotificationSettings(
+      settingsEntity,
+      dto,
+    );
+
+    // Sync notification preferences with the external service before updating settings in the database
+    // TODO - optimize by only syncing if notification-related fields are being updated
     await this.notificationPreferences.sync(userId, notificationSettings);
 
+    return this.prisma.userSettings
+      .update({
+        where: { userId },
+        data: { ...dto },
+      })
+      .then((updated) => new SettingsEntity(updated));
+  }
+
+  private getNotificationSettings(
+    existing: SettingsEntity,
+    updates: UpdateSettingsDto,
+  ): NotificationSettingsDto {
     return {
-      userId,
-      theme: dto.theme ?? ThemePreference.SYSTEM,
-      notificationsEnabled: dto.notificationsEnabled ?? true,
-      emailNotificationsEnabled: dto.emailNotificationsEnabled ?? true,
-      pushNotificationsEnabled: dto.pushNotificationsEnabled ?? false,
+      email:
+        updates.emailNotificationsEnabled ?? existing.emailNotificationsEnabled,
+      push:
+        updates.pushNotificationsEnabled ?? existing.pushNotificationsEnabled,
+      inApp: updates.notificationsEnabled ?? existing.notificationsEnabled,
     };
   }
 }

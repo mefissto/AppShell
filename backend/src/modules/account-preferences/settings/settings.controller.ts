@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
 import {
-    ApiBadRequestResponse,
-    ApiCookieAuth,
-    ApiOkResponse,
-    ApiOperation,
-    ApiTags,
-    ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiCookieAuth,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '@decorators/current-user.decorator';
@@ -44,6 +45,7 @@ export class SettingsController {
   })
   @ApiBadRequestResponse({ description: 'Validation error.' })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  @ApiNotFoundResponse({ description: 'User settings not found.' })
   updateSettings(
     @CurrentUser() currentUser: UserEntity,
     @Body() dto: UpdateSettingsDto,

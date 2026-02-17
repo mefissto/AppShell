@@ -13,6 +13,7 @@ import {
   ApiBadRequestResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiExcludeEndpoint,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -22,8 +23,11 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+import { CurrentUser } from '@decorators/current-user.decorator';
 import { ApiRoutes } from '@enums/api-routes';
 
+import { Roles } from '@decorators/roles.decorator';
+import { UserRoles } from '@enums/user-roles.enum';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserEntity } from './entities/user.entity';
@@ -36,6 +40,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Get all users' })
   @ApiOkResponse({
     description: 'List of users retrieved.',
@@ -47,7 +53,17 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('/me')
+  @ApiOperation({ summary: 'Get the current user' })
+  @ApiOkResponse({ description: 'User retrieved.', type: UserEntity })
+  @ApiUnauthorizedResponse({ description: 'Authentication required.' })
+  findCurrentUser(@CurrentUser() user: UserEntity): Promise<UserEntity> {
+    return Promise.resolve(user);
+  }
+
   @Get(':id')
+  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Get a user by ID' })
   @ApiParam({
     name: 'id',
@@ -61,6 +77,8 @@ export class UsersController {
   }
 
   @Post()
+  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Create a new user' })
   @ApiCreatedResponse({ description: 'User created.', type: UserEntity })
   @ApiBadRequestResponse({ description: 'Validation error.' })
@@ -70,6 +88,8 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Update a user' })
   @ApiParam({
     name: 'id',
@@ -88,6 +108,8 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Delete a user' })
   @ApiParam({
     name: 'id',

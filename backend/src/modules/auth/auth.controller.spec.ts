@@ -10,6 +10,7 @@ describe('AuthController', () => {
     signIn: jest.Mock;
     signUp: jest.Mock;
     verifyEmail: jest.Mock;
+    resetPassword: jest.Mock;
     refreshTokens: jest.Mock;
     logout: jest.Mock;
   };
@@ -40,6 +41,7 @@ describe('AuthController', () => {
       signIn: jest.fn(),
       signUp: jest.fn(),
       verifyEmail: jest.fn(),
+      resetPassword: jest.fn(),
       refreshTokens: jest.fn(),
       logout: jest.fn(),
     };
@@ -147,8 +149,12 @@ describe('AuthController', () => {
   });
 
   describe('resetPassword', () => {
-    it('should return void', () => {
-      expect(controller.resetPassword()).toBeUndefined();
+    it('should delegate to authService.resetPassword', async () => {
+      authService.resetPassword.mockResolvedValueOnce(undefined);
+
+      await controller.resetPassword();
+
+      expect(authService.resetPassword).toHaveBeenCalled();
     });
   });
 

@@ -7,6 +7,7 @@ import appConfig from '@config/app.config';
 import { ConfigModule } from '@config/config.module';
 import { DatabaseModule } from '@database/database.module';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
+import { RolesGuard } from '@guards/roles.guard';
 import { LoggerModule } from '@logger/logger.module';
 import { AccountPreferencesModule } from '@modules/account-preferences/account-preferences.module';
 import { AuthModule } from '@modules/auth/auth.module';
@@ -44,6 +45,12 @@ import { UsersModule } from '@modules/users/users.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    // * RolesGuard should be after JwtAuthGuard to ensure user is authenticated
+    // * and 'user' field is populated on the 'request' before checking roles
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
     {
       provide: APP_GUARD,

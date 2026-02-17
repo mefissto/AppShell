@@ -80,7 +80,7 @@ export class TasksService {
    */
   async findOneById(taskId: string, userId: string): Promise<TaskEntity> {
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, userId, deletedAt: null },
+      where: { id: taskId, userId },
     });
 
     if (!task) {
@@ -142,7 +142,7 @@ export class TasksService {
     // updateMany returns a count of updated records to verify if a task was updated
 
     const task = await this.prisma.task.findFirst({
-      where: { id, userId, deletedAt: null },
+      where: { id, userId },
     });
 
     if (!task) {

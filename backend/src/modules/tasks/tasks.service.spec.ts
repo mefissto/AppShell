@@ -135,7 +135,7 @@ describe('TasksService', () => {
       const result = await service.findOneById('task-1', 'user-1');
 
       expect(prisma.task.findFirst).toHaveBeenCalledWith({
-        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+        where: { id: 'task-1', userId: 'user-1' },
       });
       expect(result).toBeInstanceOf(TaskEntity);
       expect(result).toEqual(expect.objectContaining({ id: 'task-1' }));
@@ -247,7 +247,7 @@ describe('TasksService', () => {
       );
 
       expect(prisma.task.findFirst).toHaveBeenCalledWith({
-        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+        where: { id: 'task-1', userId: 'user-1' },
       });
       expect(prisma.project.findFirst).toHaveBeenCalledWith({
         where: { id: 'c1234567890abcdef12345678', ownerId: 'user-1' },

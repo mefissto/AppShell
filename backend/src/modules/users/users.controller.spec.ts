@@ -3,6 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
 
+import { ROLES_KEY } from '@decorators/roles.decorator';
+import { UserRoles } from '@enums/user-roles.enum';
+
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
@@ -163,6 +166,30 @@ describe('UsersController', () => {
 
       await expect(controller.delete('u1')).rejects.toThrow(NotFoundException);
       expect(usersService.delete).toHaveBeenCalledWith('u1');
+    });
+  });
+
+  describe('guards metadata', () => {
+    it('should require SUPER_ADMIN role for admin-only routes', () => {
+      const guardedMethods: Array<keyof UsersController> = [
+        'findAll',
+        'findOne',
+        'create',
+        'update',
+        'delete',
+      ];
+
+      for (const method of guardedMethods) {
+        const roles = Reflect.getMetadata(ROLES_KEY, controller[method]);
+
+        expect(roles).toEqual([UserRoles.SUPER_ADMIN]);
+      }
+    });
+
+    it('should not require role for current user route', () => {
+      const roles = Reflect.getMetadata(ROLES_KEY, controller.findCurrentUser);
+
+      expect(roles).toBeUndefined();
     });
   });
 });

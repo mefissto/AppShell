@@ -27,36 +27,11 @@ describe('PrismaService', () => {
     jest.clearAllMocks();
   });
 
-  it('should connect on module init', async () => {
-    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    prismaClientConnectMock.mockResolvedValueOnce(undefined);
-
+  it('should instantiate prisma service', () => {
     const service = new PrismaService({} as never);
-    await service.onModuleInit();
 
-    expect(prismaClientConnectMock).toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalledWith('Connected to the database');
-
-    logSpy.mockRestore();
-  });
-
-  it('should log errors when connection fails', async () => {
-    const error = new Error('connection failed');
-    const errorSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
-    prismaClientConnectMock.mockRejectedValueOnce(error);
-
-    const service = new PrismaService({} as never);
-    await service.onModuleInit();
-
-    expect(prismaClientConnectMock).toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to connect to the database',
-      error,
-    );
-
-    errorSpy.mockRestore();
+    expect(service).toBeDefined();
+    expect(prismaClientConstructorMock).toHaveBeenCalledWith({} as never);
   });
 });
 

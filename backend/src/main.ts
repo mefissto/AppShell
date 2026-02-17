@@ -1,9 +1,10 @@
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
+import { RequestValidationPipe } from '@common/pipes/request-validation.pipe';
 import appConfig from '@config/app.config';
 import { CORS_CONFIG } from '@config/cors.config';
 import { SWAGGER_CONFIG } from '@config/swagger.config';
@@ -30,22 +31,12 @@ async function bootstrap() {
 
   /**
    * Global Pipes
-   * helps to maintain the security of the application by validating the incoming data
-   * whitelist: true will remove any additional properties that are not defined in the DTO
-   * forbidNonWhitelisted: true will throw an error if there are any additional properties that are not defined in the DTO
-   * transform: true will automatically transform the incoming data to the correct DTO class type (class-transformer)
+   *
+   * RequestValidationPipe is a custom pipe that applies different validation strategies based on the source of the argument (body, query, param).
+   * This allows us to have strict validation for request bodies while enabling convenient implicit conversion for query parameters and route parameters.
+   * The pipe is applied globally, so it will be used for all incoming requests to validate the data against the defined DTOs.
    */
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true, // convert query params to the correct type
-      },
-      // TODO: add custom validation error messages (exceptionFactory)
-    }),
-  );
+  app.useGlobalPipes(new RequestValidationPipe());
 
   /** Global Filters
    * PrismaExceptionFilter will catch any PrismaClientKnownRequestError exceptions

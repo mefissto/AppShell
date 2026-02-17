@@ -1,0 +1,83 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+
+# TypeScript caches
+*.tsbuildinfo
+
+# Build outputs
+dist/
+build/
+tmp/
+temp/
+
+# NestJS
+.nestjs-plugins-cache
+
+# Environment variables
+.env
+.env.*
+
+# Jest
+jest-cache/
+jest-report/
+.jest/**
+.cache/
+
+# ESLint/Prettier caches
+.eslintcache
+.prettiercache
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# TypeDoc / docs
+docs/
+
+# npm/yarn/pnpm local config
+.npmrc
+.yarnrc
+.pnpm-debug.log
+
+# Docker
+.dockerignore
+docker-data/
+
+# Windows
+ehthumbs.db
+Desktop.ini
+
+# Optional lockfiles (keep one per your workflow)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Misc
+*.tgz
+*.patch
+
+/generated/prisma

@@ -41,7 +41,7 @@ model User {
   id                              String    @id @default(cuid())
   email                           String    @unique
   password                        String
-  name                            String?
+  name                            String? // TODO: Remove this field in favor of UserProfile's firstName and lastName
   createdAt                       DateTime  @default(now())
   updatedAt                       DateTime  @updatedAt
   emailVerified                   Boolean   @default(false)

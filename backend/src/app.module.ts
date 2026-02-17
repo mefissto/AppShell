@@ -8,7 +8,7 @@ import { ConfigModule } from '@config/config.module';
 import { DatabaseModule } from '@database/database.module';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { RolesGuard } from '@guards/roles.guard';
-import { LoggerModule } from '@logger/logger.module';
+import { LoggerModule } from '@loggers/app/logger.module';
 import { AccountPreferencesModule } from '@modules/account-preferences/account-preferences.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';

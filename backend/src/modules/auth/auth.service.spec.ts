@@ -2,10 +2,10 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Request, Response } from 'express';
 
-import { LoggerService } from '@common/logger/logger.service';
 import appConfig from '@config/app.config';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
+import { LoggerService } from '@loggers/app/logger.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';

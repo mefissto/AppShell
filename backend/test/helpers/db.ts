@@ -1,5 +1,5 @@
-import { Prisma } from '../../generated/prisma';
-import { PrismaService } from '../../src/database/prisma.service';
+import { PrismaService } from '@database/prisma.service';
+import { Prisma } from '@generated/prisma';
 
 export const cleanupUserByEmail = async (
   prisma: PrismaService,

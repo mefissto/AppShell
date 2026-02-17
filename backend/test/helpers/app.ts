@@ -8,9 +8,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 
+import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
+import { LoggerService } from '@loggers/app/logger.service';
 import { AppModule } from '../../src/app.module';
-import { PrismaExceptionFilter } from '../../src/common/filters/prisma-exception.filter';
-import { LoggerService } from '../../src/common/logger/logger.service';
 
 export type TestApp = {
   app: INestApplication<App>;

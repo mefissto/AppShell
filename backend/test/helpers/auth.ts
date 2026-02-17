@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 
-import { CookieKeys } from '../../src/common/enums/cookie-keys.enum';
+import { CookieKeys } from '@enums/cookie-keys.enum';
 import type { TestUserInput } from './test-data';
 
 export type ParsedSetCookie = {

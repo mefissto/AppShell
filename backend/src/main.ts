@@ -10,7 +10,7 @@ import { CORS_CONFIG } from '@config/cors.config';
 import { SWAGGER_CONFIG } from '@config/swagger.config';
 import { SWAGGER_DOCS_PATH } from '@constants/constants';
 import { PrismaExceptionFilter } from '@filters/prisma-exception.filter';
-import { LoggerService } from '@logger/logger.service';
+import { LoggerService } from '@loggers/app/logger.service';
 
 import { AppModule } from './app.module';
 

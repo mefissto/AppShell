@@ -30,7 +30,7 @@
       "@utils/*": ["src/common/utils/*"],
       "@decorators/*": ["src/common/decorators/*"],
       "@guards/*": ["src/common/guards/*"],
-      "@logger/*": ["src/common/logger/*"],
+      "@loggers/*": ["src/common/loggers/*"],
       "@pagination/*": ["src/common/pagination/*"],
       "@config/*": ["src/config/*"],
       "@generated/*": ["generated/*"],

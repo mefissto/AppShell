@@ -109,6 +109,7 @@
       "^@database/(.*)$": "<rootDir>/database/$1",
       "^@modules/(.*)$": "<rootDir>/modules/$1",
       "^@common/(.*)$": "<rootDir>/common/$1",
+      "^@loggers/(.*)$": "<rootDir>/common/loggers/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     }
   }

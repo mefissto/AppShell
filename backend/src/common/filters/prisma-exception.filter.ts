@@ -2,7 +2,7 @@ import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import {
   DriverAdapterError,
@@ -15,7 +15,7 @@ import {
   ErrorDetails,
   ErrorResponse,
 } from '@interfaces/error-response.interface';
-import { LoggerService } from '@logger/logger.service';
+import { LoggerService } from '@loggers/app/logger.service';
 import { getConstraintFields } from '@utils/mapped-error.utils';
 /**
  * Global exception filter to handle all Prisma errors and convert them to appropriate HTTP responses.

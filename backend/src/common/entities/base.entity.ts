@@ -2,6 +2,10 @@
  * Base entity class providing common functionality for all entities.
  */
 export abstract class BaseEntity {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+
   protected static filterNullishValues<T extends object>(
     obj: Partial<T>,
   ): Partial<T> {

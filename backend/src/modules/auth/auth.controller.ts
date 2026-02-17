@@ -91,7 +91,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset' })
   @ApiOkResponse({ description: 'Reset process initiated.' })
   @HttpCode(HttpStatus.OK)
-  resetPassword(): void {}
+  resetPassword(): Promise<void> {
+    return this.authService.resetPassword();
+  }
 
   @Post('refresh')
   @UseGuards(JwtRefreshAuthGuard)

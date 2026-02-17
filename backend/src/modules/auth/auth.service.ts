@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
@@ -112,6 +113,14 @@ export class AuthService {
 
     response.clearCookie(CookieKeys.Authentication);
     response.clearCookie(CookieKeys.RefreshToken);
+  }
+
+  async resetPassword(): Promise<void> {
+    // Implementation for initiating password reset (e.g., send email with token)
+    this.logger.warn(
+      'Password reset requested - functionality not implemented yet',
+    );
+    throw new NotImplementedException('Password reset not implemented yet');
   }
 
   async validateUser(signInDto: SignInDto): Promise<UserEntity | null> {

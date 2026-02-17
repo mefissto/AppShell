@@ -40,7 +40,9 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  // Only allow access to users with the SUPER_ADMIN role
+  // TODO*: Admin endpoints disabled until roles are implemented
+  @Roles(UserRoles.SUPER_ADMIN)
   @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Get all users' })
   @ApiOkResponse({
@@ -62,7 +64,9 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  // Only allow access to users with the SUPER_ADMIN role
+  // TODO*: Admin endpoints disabled until roles are implemented
+  @Roles(UserRoles.SUPER_ADMIN)
   @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Get a user by ID' })
   @ApiParam({
@@ -77,7 +81,9 @@ export class UsersController {
   }
 
   @Post()
-  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  // Only allow access to users with the SUPER_ADMIN role
+  // TODO*: Admin endpoints disabled until roles are implemented
+  @Roles(UserRoles.SUPER_ADMIN)
   @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Create a new user' })
   @ApiCreatedResponse({ description: 'User created.', type: UserEntity })
@@ -88,7 +94,9 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  // Only allow access to users with the SUPER_ADMIN role
+  // TODO*: Admin endpoints disabled until roles are implemented
+  @Roles(UserRoles.SUPER_ADMIN)
   @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Update a user' })
   @ApiParam({
@@ -108,7 +116,9 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRoles.SUPER_ADMIN) // Only allow access to users with the SUPER_ADMIN role
+  // Only allow access to users with the SUPER_ADMIN role
+  // TODO*: Admin endpoints disabled until roles are implemented
+  @Roles(UserRoles.SUPER_ADMIN)
   @ApiExcludeEndpoint() // Hide from Swagger docs
   @ApiOperation({ summary: 'Delete a user' })
   @ApiParam({

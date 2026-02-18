@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "AuditLog" ALTER COLUMN "actorType" SET DEFAULT 'ANONYMOUS';

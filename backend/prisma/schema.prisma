@@ -139,13 +139,20 @@ model UserProfile {
 // Audit Log
 // ===================
 model AuditLog {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   action         String
-  actorUserId    String
+  actorType      ActorType @default(ANONYMOUS)
+  actorUserId    String?
   targetEntity   String
-  targetEntityId String
-  timestamp      DateTime @default(now())
+  targetEntityId String?
+  timestamp      DateTime  @default(now())
   ipAddress      String?
   userAgent      String?
   extraContext   Json?
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  ANONYMOUS
 }

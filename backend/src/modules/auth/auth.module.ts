@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 
 import jwtConfig from '@config/jwt.config';
 import { AuthStrategy } from '@enums/auth-strategy.enum';
+import { AuditLoggerModule } from '@loggers/audit/audit-logger.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { SecurityModule } from '@modules/security/security.module';
 import { UsersModule } from '@modules/users/users.module';
@@ -21,6 +22,7 @@ import { LocalStrategy } from './strategies/local.strategy';
     UsersModule,
     NotificationsModule,
     SecurityModule,
+    AuditLoggerModule,
     PassportModule.register({ defaultStrategy: AuthStrategy.JWT }),
     JwtModule.registerAsync({
       useFactory: (config: ConfigType<typeof jwtConfig>) => ({

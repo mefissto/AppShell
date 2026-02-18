@@ -14,7 +14,13 @@ import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 import { JwtPayload } from '@interfaces/jwt-payload';
 import { LoggerService } from '@loggers/app/logger.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import {
+  AuthAuditAction,
+  UserAuditAction,
+} from '@loggers/enums/audit-actions.enum';
 import { NotificationsService } from '@modules/notifications/notifications.service';
+import { SessionEntity } from '@modules/security/entities/session.entity';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
 import { UserEntity } from '@modules/users/entities/user.entity';
@@ -36,6 +42,7 @@ export class AuthService {
     private readonly hashingService: HashingService,
     private readonly notificationsService: NotificationsService,
     private readonly logger: LoggerService,
+    private readonly auditLogger: AuditLoggerService,
   ) {
     this.logger.setContext(AuthService.name);
   }
@@ -47,6 +54,12 @@ export class AuthService {
     });
 
     await this.handleTokensCreation(user, session.id, response);
+    this.auditLogger.log({
+      action: AuthAuditAction.LOGIN_SUCCESS,
+      actorUserId: user.id,
+      targetEntity: SessionEntity.name,
+      targetEntityId: session.id,
+    });
   }
 
   async signUp(signUpDto: SignUpDto): Promise<void> {
@@ -66,11 +79,17 @@ export class AuthService {
       },
     });
 
-    await this.usersService.create(signUpDto, {
+    const user = await this.usersService.create(signUpDto, {
       emailVerificationToken: await this.hashingService.hash(
         emailVerificationToken,
       ),
       emailVerificationTokenExpiresAt,
+    });
+    this.auditLogger.log({
+      action: UserAuditAction.USER_CREATED,
+      actorUserId: user.id,
+      targetEntity: UserEntity.name,
+      targetEntityId: user.id,
     });
   }
 
@@ -86,6 +105,12 @@ export class AuthService {
     );
 
     if (!isTokenValid || !user) {
+      this.auditLogger.log({
+        action: AuthAuditAction.EMAIL_VERIFICATION_FAILURE,
+        actorUserId: user?.id,
+        targetEntity: UserEntity.name,
+        targetEntityId: user?.id,
+      });
       throw new BadRequestException('Invalid or expired verification token');
     }
 
@@ -93,6 +118,12 @@ export class AuthService {
       emailVerified: true,
       emailVerificationToken: null,
       emailVerificationTokenExpiresAt: null,
+    });
+    this.auditLogger.log({
+      action: AuthAuditAction.EMAIL_VERIFICATION_SUCCESS,
+      actorUserId: user.id,
+      targetEntity: UserEntity.name,
+      targetEntityId: user.id,
     });
   }
 
@@ -104,6 +135,12 @@ export class AuthService {
     const sessionId = this.getSessionIdFromRequest(request);
 
     await this.handleTokensCreation(user, sessionId, response);
+    this.auditLogger.log({
+      action: AuthAuditAction.TOKEN_REFRESH_SUCCESS,
+      actorUserId: user.id,
+      targetEntity: SessionEntity.name,
+      targetEntityId: sessionId,
+    });
   }
 
   async logout(request: Request, response: Response): Promise<void> {
@@ -113,6 +150,11 @@ export class AuthService {
 
     response.clearCookie(CookieKeys.Authentication);
     response.clearCookie(CookieKeys.RefreshToken);
+    this.auditLogger.log({
+      action: AuthAuditAction.LOGOUT,
+      targetEntity: SessionEntity.name,
+      targetEntityId: sessionId,
+    });
   }
 
   async resetPassword(): Promise<void> {
@@ -133,6 +175,13 @@ export class AuthService {
       this.logger.warn(
         `Login attempt for non-existent user: ${signInDto.email}`,
       );
+      this.auditLogger.log({
+        action: AuthAuditAction.LOGIN_FAILURE,
+        targetEntity: UserEntity.name,
+        targetEntityId: user?.id,
+        extraContext: { reason: 'Invalid credentials' },
+      });
+
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -145,6 +194,13 @@ export class AuthService {
       this.logger.warn(
         `Failed login attempt for user: ${signInDto.email} (invalid password)`,
       );
+      this.auditLogger.log({
+        action: AuthAuditAction.LOGIN_FAILURE,
+        targetEntity: UserEntity.name,
+        targetEntityId: user?.id,
+        extraContext: { reason: 'Invalid credentials' },
+      });
+
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -158,12 +214,26 @@ export class AuthService {
     const session = await this.sessionsService.findById(sessionId);
 
     if (!session || !session.refreshToken || !session.expiresAt) {
+      this.auditLogger.log({
+        action: AuthAuditAction.TOKEN_REFRESH_FAILURE,
+        targetEntity: SessionEntity.name,
+        targetEntityId: session?.id,
+        extraContext: { reason: 'Invalid refresh token' },
+      });
+
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     const user = await this.usersService.findUnique({ id: session.userId });
 
     if (!user) {
+      this.auditLogger.log({
+        action: AuthAuditAction.LOGIN_FAILURE,
+        targetEntity: SessionEntity.name,
+        targetEntityId: session.id,
+        extraContext: { reason: 'User not found' },
+      });
+
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -181,6 +251,13 @@ export class AuthService {
     ) {
       return user;
     }
+
+    this.auditLogger.log({
+      action: AuthAuditAction.LOGIN_FAILURE,
+      targetEntity: SessionEntity.name,
+      targetEntityId: session?.id,
+      extraContext: { reason: 'Invalid refresh token' },
+    });
 
     throw new UnauthorizedException('Invalid refresh token');
   }

@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
 import { Prisma } from '@generated/prisma/client';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { UserAuditAction } from '@loggers/enums/audit-actions.enum';
 import { HashingService } from '@modules/security/services/hashing.service';
 
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -13,6 +15,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly hashingService: HashingService,
+    private readonly auditLogger: AuditLoggerService,
   ) {}
 
   /**
@@ -69,12 +72,19 @@ export class UsersService {
   ): Promise<UserEntity> {
     const hashedPassword = await this.hashingService.hash(data.password);
 
-    return this.prisma.user
-      .create({
-        data: { ...data, password: hashedPassword, ...userInput },
-        omit: { password: true },
-      })
-      .then((user) => new UserEntity(user));
+    const user = await this.prisma.user.create({
+      data: { ...data, password: hashedPassword, ...userInput },
+      omit: { password: true },
+    });
+
+    this.auditLogger.log({
+      action: UserAuditAction.USER_CREATE_SUCCESS,
+      actorUserId: user.id,
+      targetEntity: UserEntity.name,
+      targetEntityId: user.id,
+    });
+
+    return new UserEntity(user);
   }
 
   /**
@@ -89,13 +99,20 @@ export class UsersService {
   ): Promise<UserEntity> {
     await this.prisma.user.findUniqueOrThrow({ where: { id } }); // throws if missing
 
-    return this.prisma.user
-      .update({
-        where: { id },
-        data: userData,
-        omit: { password: true },
-      })
-      .then((user) => new UserEntity(user));
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: userData,
+      omit: { password: true },
+    });
+
+    this.auditLogger.log({
+      action: UserAuditAction.USER_UPDATE_SUCCESS,
+      actorUserId: user.id,
+      targetEntity: UserEntity.name,
+      targetEntityId: user.id,
+    });
+
+    return new UserEntity(user);
   }
 
   /**

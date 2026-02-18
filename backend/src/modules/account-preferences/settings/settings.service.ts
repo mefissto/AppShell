@@ -1,6 +1,9 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { AccountPreferencesAuditAction } from '@loggers/enums/audit-actions.enum';
+
 import { DEFAULT_SETTINGS } from './constants/default-settings.const';
 import { NotificationSettingsDto } from './dtos/notification-settings.dto';
 import { UpdateSettingsDto } from './dtos/update-settings.dto';
@@ -20,6 +23,7 @@ export class SettingsService {
     @Inject(NOTIFICATION_PREFERENCES_PORT)
     private readonly notificationPreferences: NotificationPreferencesPort,
     private readonly prisma: PrismaService,
+    private readonly auditLogger: AuditLoggerService,
   ) {}
 
   async getByUserId(userId: string): Promise<SettingsEntity> {
@@ -32,12 +36,7 @@ export class SettingsService {
     }
 
     return this.prisma.userSettings
-      .create({
-        data: {
-          userId,
-          ...DEFAULT_SETTINGS,
-        },
-      })
+      .create({ data: { userId, ...DEFAULT_SETTINGS } })
       .then((created) => new SettingsEntity(created));
   }
 
@@ -63,12 +62,18 @@ export class SettingsService {
     // TODO - optimize by only syncing if notification-related fields are being updated
     await this.notificationPreferences.sync(userId, notificationSettings);
 
-    return this.prisma.userSettings
-      .update({
-        where: { userId },
-        data: { ...dto },
-      })
-      .then((updated) => new SettingsEntity(updated));
+    const updatedSettings = await this.prisma.userSettings.update({
+      where: { userId },
+      data: { ...dto },
+    });
+
+    this.auditLogger.log({
+      action: AccountPreferencesAuditAction.ACCOUNT_SETTINGS_UPDATE_SUCCESS,
+      targetEntity: SettingsEntity.name,
+      targetEntityId: updatedSettings.id,
+    });
+
+    return new SettingsEntity(updatedSettings);
   }
 
   private getNotificationSettings(

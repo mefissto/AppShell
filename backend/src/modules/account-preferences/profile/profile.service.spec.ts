@@ -1,12 +1,13 @@
 import { Test } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { ProfileEntity } from './entities/profile.entity';
 import {
-    AVATAR_STORAGE_PORT,
-    AvatarStoragePort,
+  AVATAR_STORAGE_PORT,
+  AvatarStoragePort,
 } from './ports/avatar-storage.port';
 import { ProfileService } from './profile.service';
 
@@ -23,6 +24,7 @@ describe('ProfileService', () => {
     upload: jest.Mock;
     remove: jest.Mock;
   };
+  let auditLoggerService: { log: jest.Mock };
 
   const makeProfileRecord = (overrides: Record<string, unknown> = {}) => ({
     id: 'profile-1',
@@ -49,6 +51,7 @@ describe('ProfileService', () => {
       upload: jest.fn(),
       remove: jest.fn(),
     };
+    auditLoggerService = { log: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -58,6 +61,7 @@ describe('ProfileService', () => {
           provide: AVATAR_STORAGE_PORT,
           useValue: avatarStorage as AvatarStoragePort,
         },
+        { provide: AuditLoggerService, useValue: auditLoggerService },
       ],
     }).compile();
 

@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 
+import { AccountPreferencesAuditAction } from '@loggers/enums/audit-actions.enum';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { ProfileEntity } from './entities/profile.entity';
 import type { AvatarStoragePort } from './ports/avatar-storage.port';
@@ -19,6 +21,7 @@ export class ProfileService {
     @Inject(AVATAR_STORAGE_PORT)
     private readonly avatarStorage: AvatarStoragePort,
     private readonly prisma: PrismaService,
+    private readonly auditLogger: AuditLoggerService,
   ) {}
 
   async getByUserId(userId: string): Promise<ProfileEntity> {
@@ -48,11 +51,17 @@ export class ProfileService {
      */
     await this.avatarStorage.upload(userId, Buffer.alloc(0), 'image/png');
 
-    return this.prisma.userProfile
-      .update({
-        where: { userId },
-        data: dto,
-      })
-      .then((updatedProfile) => new ProfileEntity(updatedProfile));
+    const updatedProfile = await this.prisma.userProfile.update({
+      where: { userId },
+      data: dto,
+    });
+
+    this.auditLogger.log({
+      action: AccountPreferencesAuditAction.ACCOUNT_PROFILE_UPDATE_SUCCESS,
+      targetEntity: ProfileEntity.name,
+      targetEntityId: updatedProfile.id,
+    });
+
+    return new ProfileEntity(updatedProfile);
   }
 }

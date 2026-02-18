@@ -86,7 +86,7 @@ export class AuthService {
       emailVerificationTokenExpiresAt,
     });
     this.auditLogger.log({
-      action: UserAuditAction.USER_CREATED,
+      action: UserAuditAction.USER_CREATE_SUCCESS,
       actorUserId: user.id,
       targetEntity: UserEntity.name,
       targetEntityId: user.id,

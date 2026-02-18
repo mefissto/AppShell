@@ -3,13 +3,14 @@ import { Test } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
 import { ThemePreference } from '@generated/prisma';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 
 import { DEFAULT_SETTINGS } from './constants/default-settings.const';
 import { UpdateSettingsDto } from './dtos/update-settings.dto';
 import { SettingsEntity } from './entities/settings.entity';
 import {
-    NOTIFICATION_PREFERENCES_PORT,
-    NotificationPreferencesPort,
+  NOTIFICATION_PREFERENCES_PORT,
+  NotificationPreferencesPort,
 } from './ports/notification-preferences.port';
 import { SettingsService } from './settings.service';
 
@@ -23,6 +24,7 @@ describe('SettingsService', () => {
     };
   };
   let notificationPreferences: { sync: jest.Mock };
+  let auditLoggerService: { log: jest.Mock };
 
   const makeSettingsRecord = (overrides: Record<string, unknown> = {}) => ({
     id: 'settings-1',
@@ -45,6 +47,7 @@ describe('SettingsService', () => {
     notificationPreferences = {
       sync: jest.fn(),
     };
+    auditLoggerService = { log: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -54,6 +57,7 @@ describe('SettingsService', () => {
           provide: NOTIFICATION_PREFERENCES_PORT,
           useValue: notificationPreferences as NotificationPreferencesPort,
         },
+        { provide: AuditLoggerService, useValue: auditLoggerService },
       ],
     }).compile();
 

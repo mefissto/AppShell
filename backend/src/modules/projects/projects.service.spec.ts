@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 
 import { ProjectEntity } from './entities/project.entity';
 import { ProjectsService } from './projects.service';
@@ -21,6 +22,7 @@ describe('ProjectsService', () => {
       findUnique: jest.Mock;
     };
   };
+  let auditLoggerService: { log: jest.Mock };
 
   const mockProject = (overrides: Partial<ProjectEntity> = {}) => ({
     id: 'proj-1',
@@ -48,6 +50,7 @@ describe('ProjectsService', () => {
         findUnique: jest.fn(),
       },
     };
+    auditLoggerService = { log: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -56,6 +59,7 @@ describe('ProjectsService', () => {
           provide: PrismaService,
           useValue: prisma,
         },
+        { provide: AuditLoggerService, useValue: auditLoggerService },
       ],
     }).compile();
 

@@ -6,6 +6,7 @@ import appConfig from '@config/app.config';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 import { LoggerService } from '@loggers/app/logger.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
@@ -38,6 +39,7 @@ describe('AuthService', () => {
   };
   let notificationsService: { sendEmailVerificationEmail: jest.Mock };
   let loggerService: { setContext: jest.Mock; warn: jest.Mock };
+  let auditLoggerService: { log: jest.Mock };
   let mockAppConfig: {
     emailVerificationTokenTtl: number;
     emailVerificationUrl: string;
@@ -87,6 +89,7 @@ describe('AuthService', () => {
     };
     notificationsService = { sendEmailVerificationEmail: jest.fn() };
     loggerService = { setContext: jest.fn(), warn: jest.fn() };
+    auditLoggerService = { log: jest.fn() };
     mockAppConfig = {
       emailVerificationTokenTtl: 3600,
       emailVerificationUrl: 'http://example.com/verify',
@@ -102,6 +105,7 @@ describe('AuthService', () => {
         { provide: HashingService, useValue: hashingService },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: LoggerService, useValue: loggerService },
+        { provide: AuditLoggerService, useValue: auditLoggerService },
         { provide: appConfig.KEY, useValue: mockAppConfig },
       ],
     }).compile();
@@ -177,7 +181,7 @@ describe('AuthService', () => {
       notificationsService.sendEmailVerificationEmail.mockResolvedValueOnce(
         undefined,
       );
-      usersService.create.mockResolvedValueOnce(undefined);
+      usersService.create.mockResolvedValueOnce(mockUser());
 
       await authService.signUp(signUpDto);
 

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { AuditLoggerModule } from '@loggers/audit/audit-logger.module';
+
 import { LocalNotificationPreferencesAdapter } from './adapters/local-notification-preferences.adapter';
 import { NOTIFICATION_PREFERENCES_PORT } from './ports/notification-preferences.port';
 import { SettingsController } from './settings.controller';
@@ -12,6 +14,7 @@ import { SettingsService } from './settings.service';
  * - Token -> LocalNotificationPreferencesAdapter
  */
 @Module({
+  imports: [AuditLoggerModule],
   controllers: [SettingsController],
   providers: [
     SettingsService,

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
 import { EntityListRequestBuilder } from '@pagination/builders/entity-list-request.builder';
 import { EntityListResponseDto } from '@pagination/interfaces/entity-list-response.dto';
 import { PaginationService } from '@pagination/services/pagination.service';
@@ -16,6 +18,7 @@ export class TasksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paginationService: PaginationService,
+    private readonly auditLogger: AuditLoggerService,
   ) {}
 
   /**
@@ -99,9 +102,18 @@ export class TasksService {
     createTaskDto: CreateTaskDto,
     userId: string,
   ): Promise<TaskEntity> {
-    return await this.prisma.task
-      .create({ data: { ...createTaskDto, userId } })
-      .then((task) => new TaskEntity(task));
+    const task = await this.prisma.task.create({
+      data: { ...createTaskDto, userId },
+    });
+
+    this.auditLogger.log({
+      action: TaskAuditAction.TASK_CREATE_SUCCESS,
+      actorUserId: userId,
+      targetEntity: TaskEntity.name,
+      targetEntityId: task.id,
+    });
+
+    return new TaskEntity(task);
   }
 
   /**
@@ -125,12 +137,28 @@ export class TasksService {
     });
 
     if (updated.count === 0) {
+      this.auditLogger.log({
+        action: TaskAuditAction.TASK_UPDATE_FAILURE,
+        actorUserId: userId,
+        targetEntity: TaskEntity.name,
+        targetEntityId: taskId,
+      });
+
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
-    return await this.prisma.task
-      .findFirstOrThrow({ where: { id: taskId, userId, deletedAt: null } })
-      .then((task) => new TaskEntity(task));
+    const updatedTask = await this.prisma.task.findFirstOrThrow({
+      where: { id: taskId, userId, deletedAt: null },
+    });
+
+    this.auditLogger.log({
+      action: TaskAuditAction.TASK_UPDATE_SUCCESS,
+      actorUserId: userId,
+      targetEntity: TaskEntity.name,
+      targetEntityId: updatedTask.id,
+    });
+
+    return new TaskEntity(updatedTask);
   }
 
   async assignToProject(
@@ -146,6 +174,14 @@ export class TasksService {
     });
 
     if (!task) {
+      this.auditLogger.log({
+        action: TaskAuditAction.TASK_ASSIGN_FAILURE,
+        actorUserId: userId,
+        targetEntity: TaskEntity.name,
+        targetEntityId: id,
+        extraContext: { attemptedProjectId: assignToProjectDto.projectId },
+      });
+
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
@@ -156,6 +192,14 @@ export class TasksService {
       });
 
       if (!project) {
+        this.auditLogger.log({
+          action: TaskAuditAction.TASK_ASSIGN_FAILURE,
+          actorUserId: userId,
+          targetEntity: TaskEntity.name,
+          targetEntityId: id,
+          extraContext: { attemptedProjectId: assignToProjectDto.projectId },
+        });
+
         throw new NotFoundException(
           `Project with ID ${assignToProjectDto.projectId} not found`,
         );
@@ -168,12 +212,30 @@ export class TasksService {
     });
 
     if (updated.count === 0) {
+      this.auditLogger.log({
+        action: TaskAuditAction.TASK_ASSIGN_FAILURE,
+        actorUserId: userId,
+        targetEntity: TaskEntity.name,
+        targetEntityId: id,
+        extraContext: { attemptedProjectId: assignToProjectDto.projectId },
+      });
+
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
-    return await this.prisma.task
-      .findFirstOrThrow({ where: { id, userId, deletedAt: null } })
-      .then((task) => new TaskEntity(task));
+    const updatedTask = await this.prisma.task.findFirstOrThrow({
+      where: { id, userId, deletedAt: null },
+    });
+
+    this.auditLogger.log({
+      action: TaskAuditAction.TASK_ASSIGN_SUCCESS,
+      actorUserId: userId,
+      targetEntity: TaskEntity.name,
+      targetEntityId: updatedTask.id,
+      extraContext: { assignedProjectId: assignToProjectDto.projectId },
+    });
+
+    return new TaskEntity(updatedTask);
   }
 
   /**
@@ -189,7 +251,21 @@ export class TasksService {
     });
 
     if (deleted.count === 0) {
+      this.auditLogger.log({
+        action: TaskAuditAction.TASK_DELETE_FAILURE,
+        actorUserId: userId,
+        targetEntity: TaskEntity.name,
+        targetEntityId: taskId,
+      });
+
       throw new NotFoundException(`Task with ID ${taskId} not found`);
+    } else {
+      this.auditLogger.log({
+        action: TaskAuditAction.TASK_DELETE_SUCCESS,
+        actorUserId: userId,
+        targetEntity: TaskEntity.name,
+        targetEntityId: taskId,
+      });
     }
   }
 }

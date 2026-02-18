@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { HashingService } from '@modules/security/services/hashing.service';
 
 import { UserEntity } from './entities/user.entity';
@@ -20,6 +21,7 @@ describe('UsersService', () => {
     };
   };
   let hashingService: { hash: jest.Mock; compare: jest.Mock };
+  let auditLoggerService: { log: jest.Mock };
 
   beforeEach(async () => {
     prismaService = {
@@ -33,12 +35,14 @@ describe('UsersService', () => {
       },
     };
     hashingService = { hash: jest.fn(), compare: jest.fn() };
+    auditLoggerService = { log: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: PrismaService, useValue: prismaService },
         { provide: HashingService, useValue: hashingService },
+        { provide: AuditLoggerService, useValue: auditLoggerService },
       ],
     }).compile();
 

@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
 import { TaskStatus } from '@generated/prisma';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { PaginationService } from '@pagination/services/pagination.service';
 
 import { TaskListRequestDto } from './dto/task-list-request.dto';
@@ -26,6 +27,7 @@ describe('TasksService', () => {
     };
   };
   let paginationService: { buildResponse: jest.Mock };
+  let auditLoggerService: { log: jest.Mock };
 
   const mockTask = () => ({
     id: 'task-1',
@@ -54,12 +56,14 @@ describe('TasksService', () => {
       },
     };
     paginationService = { buildResponse: jest.fn() };
+    auditLoggerService = { log: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TasksService,
         { provide: PrismaService, useValue: prisma },
         { provide: PaginationService, useValue: paginationService },
+        { provide: AuditLoggerService, useValue: auditLoggerService },
       ],
     }).compile();
 

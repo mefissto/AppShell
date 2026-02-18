@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 
+import { ProjectAuditAction } from '@loggers/enums/audit-actions.enum';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateOwnerDto } from './dto/update-owner.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -9,7 +11,10 @@ import { ProjectEntity } from './entities/project.entity';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogger: AuditLoggerService,
+  ) {}
 
   async findAll(userId: string): Promise<ProjectEntity[]> {
     const projects = await this.prisma.project.findMany({
@@ -44,6 +49,12 @@ export class ProjectsService {
       },
     });
 
+    this.auditLogger.log({
+      action: ProjectAuditAction.PROJECT_CREATE_SUCCESS,
+      targetEntity: ProjectEntity.name,
+      targetEntityId: project.id,
+    });
+
     return new ProjectEntity(project);
   }
 
@@ -65,6 +76,12 @@ export class ProjectsService {
       where: { id, ownerId: userId },
     });
 
+    this.auditLogger.log({
+      action: ProjectAuditAction.PROJECT_UPDATE_SUCCESS,
+      targetEntity: ProjectEntity.name,
+      targetEntityId: updatedProject.id,
+    });
+
     return new ProjectEntity(updatedProject);
   }
 
@@ -78,6 +95,13 @@ export class ProjectsService {
     });
 
     if (!newOwner) {
+      this.auditLogger.log({
+        action: ProjectAuditAction.PROJECT_OWNER_UPDATE_FAILURE,
+        actorUserId: userId,
+        targetEntity: ProjectEntity.name,
+        targetEntityId: id,
+      });
+
       throw new NotFoundException(
         `User with ID ${updateOwnerDto.ownerId} not found`,
       );
@@ -89,11 +113,25 @@ export class ProjectsService {
     });
 
     if (updated.count === 0) {
+      this.auditLogger.log({
+        action: ProjectAuditAction.PROJECT_OWNER_UPDATE_FAILURE,
+        actorUserId: userId,
+        targetEntity: ProjectEntity.name,
+        targetEntityId: id,
+      });
+
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
 
     const updatedProject = await this.prisma.project.findFirstOrThrow({
       where: { id, ownerId: updateOwnerDto.ownerId },
+    });
+
+    this.auditLogger.log({
+      action: ProjectAuditAction.PROJECT_OWNER_UPDATE_SUCCESS,
+      actorUserId: userId,
+      targetEntity: ProjectEntity.name,
+      targetEntityId: updatedProject.id,
     });
 
     return new ProjectEntity(updatedProject);
@@ -105,7 +143,21 @@ export class ProjectsService {
     });
 
     if (deleted.count === 0) {
+      this.auditLogger.log({
+        action: ProjectAuditAction.PROJECT_DELETE_FAILURE,
+        actorUserId: userId,
+        targetEntity: ProjectEntity.name,
+        targetEntityId: id,
+      });
+
       throw new NotFoundException(`Project with ID ${id} not found`);
+    } else {
+      this.auditLogger.log({
+        action: ProjectAuditAction.PROJECT_DELETE_SUCCESS,
+        actorUserId: userId,
+        targetEntity: ProjectEntity.name,
+        targetEntityId: id,
+      });
     }
   }
 }

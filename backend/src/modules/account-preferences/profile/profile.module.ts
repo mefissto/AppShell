@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { AuditLoggerModule } from '@loggers/audit/audit-logger.module';
+
 import { LocalAvatarStorageAdapter } from './adapters/local-avatar-storage.adapter';
 import { AVATAR_STORAGE_PORT } from './ports/avatar-storage.port';
 import { ProfileController } from './profile.controller';
@@ -12,6 +14,7 @@ import { ProfileService } from './profile.service';
  * - Token -> LocalAvatarStorageAdapter (concrete implementation)
  */
 @Module({
+  imports: [AuditLoggerModule],
   controllers: [ProfileController],
   providers: [
     ProfileService,

@@ -49,33 +49,39 @@ model User {
   emailVerificationTokenExpiresAt DateTime?
 
   // Relations
-  sessions     Session[]
-  tasks        Task[]
-  projects     Project[]
-  userSettings UserSettings?
-  userProfile  UserProfile?
-  tags         Tag[]
+  sessions      Session[]
+  tasks         Task[]
+  projects      Project[]
+  userSettings  UserSettings?
+  userProfile   UserProfile?
+  tags          Tag[]
+  notifications Notification[]
 }
 
 // ===================
 // Task
 // ===================
 model Task {
-  id          String     @id @default(cuid())
-  title       String
-  description String?
-  status      TaskStatus @default(PENDING)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  deletedAt   DateTime?
+  id             String             @id @default(cuid())
+  title          String
+  description    String?
+  status         TaskStatus         @default(PENDING)
+  priority       TaskPriority       @default(MEDIUM)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+  dueAt          DateTime?
+  remindAt       DateTime?
+  reminderStatus TaskReminderStatus @default(CANCELED)
   // Required relationship to User
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
   // Optional relationship to Project
-  projectId   String?
-  project     Project?   @relation(fields: [projectId], references: [id])
+  projectId      String?
+  project        Project?           @relation(fields: [projectId], references: [id])
+
   // Many-to-many relationship with Tag through TaskTag
-  tags        TaskTag[]
+  tags TaskTag[]
 
   @@index([id, userId])
 }
@@ -84,6 +90,20 @@ enum TaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  CANCELED
+  OVERDUE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskReminderStatus {
+  PENDING
+  SENT
+  CANCELED
 }
 
 // ===================
@@ -193,4 +213,26 @@ model TaskTag {
   tagId  String
 
   @@id([taskId, tagId])
+}
+
+// ===================
+// Notification
+// ===================
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  message   String
+  payload   Json? // Optional JSON payload for additional data related to the notification
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  // Required relationship to User
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  EMAIL
+  PUSH
+  IN_APP
 }

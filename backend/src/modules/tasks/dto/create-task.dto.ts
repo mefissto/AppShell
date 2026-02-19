@@ -3,12 +3,14 @@ import {
   ArrayUnique,
   IsArray,
   IsEnum,
+  IsISO8601,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
 
+import { IsBefore } from '@decorators/is-before.decorator';
 import { IsCuid } from '@decorators/is-cuid.decorator';
 import { TaskStatus } from '@generated/prisma';
 
@@ -54,4 +56,29 @@ export class CreateTaskDto {
   @ArrayUnique({ message: 'Tag IDs must be unique' })
   @IsCuid({ each: true, message: 'Each tag ID must be a valid CUID' })
   tagIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Due date of the task.',
+    example: '2024-12-31T23:59:59.000Z',
+  })
+  @IsOptional()
+  @IsISO8601(
+    { strict: true, strictSeparator: true },
+    { message: 'Due date must be a valid ISO 8601 date string' },
+  )
+  dueAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Reminder date for the task.',
+    example: '2024-12-30T23:59:59.000Z',
+  })
+  @IsOptional()
+  @IsISO8601(
+    { strict: true, strictSeparator: true },
+    { message: 'Reminder date must be a valid ISO 8601 date string' },
+  )
+  @IsBefore('dueAt', {
+    message: 'Reminder date must be equal to or before the due date',
+  })
+  remindAt?: Date;
 }

@@ -26,9 +26,10 @@ model Session {
   ipAddress    String?
   userAgent    String?
   deviceName   String?
-  userId       String // Foreign key to User model
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Required relationship to User
+  userId String // Foreign key to User model
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([id, userId])
 }
@@ -47,6 +48,7 @@ model User {
   emailVerificationToken          String?   @unique
   emailVerificationTokenExpiresAt DateTime?
 
+  // Relations
   sessions     Session[]
   tasks        Task[]
   projects     Project[]
@@ -66,12 +68,14 @@ model Task {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   deletedAt   DateTime?
+  // Required relationship to User
   userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  // Optional relationship to Project
   projectId   String?
-
-  user     User      @relation(fields: [userId], references: [id])
-  project  Project?  @relation(fields: [projectId], references: [id])
-  taskTags TaskTag[]
+  project     Project?   @relation(fields: [projectId], references: [id])
+  // Many-to-many relationship with Tag through TaskTag
+  tags        TaskTag[]
 
   @@index([id, userId])
 }
@@ -91,10 +95,11 @@ model Project {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // Required relationship to User
   ownerId     String
-
-  owner User   @relation(fields: [ownerId], references: [id])
-  tasks Task[]
+  owner       User     @relation(fields: [ownerId], references: [id])
+  // One-to-many relationship with Task
+  tasks       Task[]
 }
 
 // ===================
@@ -102,15 +107,15 @@ model Project {
 // ===================
 model UserSettings {
   id                        String          @id @default(cuid())
-  userId                    String          @unique
   theme                     ThemePreference @default(SYSTEM)
   notificationsEnabled      Boolean         @default(true)
   emailNotificationsEnabled Boolean         @default(true)
   pushNotificationsEnabled  Boolean         @default(true)
   createdAt                 DateTime        @default(now())
   updatedAt                 DateTime        @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Required relationship to User
+  userId                    String          @unique
+  user                      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum ThemePreference {
@@ -124,7 +129,6 @@ enum ThemePreference {
 // ===================
 model UserProfile {
   id          String   @id @default(cuid())
-  userId      String   @unique
   firstName   String?
   lastName    String?
   displayName String?
@@ -133,8 +137,9 @@ model UserProfile {
   avatarUrl   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Required relationship to User
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ===================
@@ -163,26 +168,29 @@ enum ActorType {
 // Tag
 // ===================
 model Tag {
-  id        String   @id @default(cuid())
-  userId    String
+  id        String    @id @default(cuid())
   name      String // The display name of the tag
-  nameLower String   @unique // A lowercase version of the name for case-insensitive uniqueness
+  nameLower String    @unique // A lowercase version of the name for case-insensitive uniqueness
   color     String? // Optional color for the tag
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  // Required relationship to User
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Many-to-many relationship with Task through TaskTag
+  tasks     TaskTag[]
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskTags TaskTag[]
-
+  @@unique([id, userId]) // Ensure tag IDs are unique per user
   @@unique([userId, nameLower]) // Ensure tag names are unique per user, case-insensitively
 }
 
 model TaskTag {
+  // Composite model for many-to-many relationship between Task and Tag
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId String
+  // Composite relationship to Tag   
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
   tagId  String
-
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([taskId, tagId])
 }

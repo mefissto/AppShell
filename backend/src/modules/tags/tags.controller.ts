@@ -21,7 +21,9 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '@decorators/current-user.decorator';
+import { ApiRoutes } from '@enums/api-routes';
 import { UserEntity } from '@modules/users/entities/user.entity';
+
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagEntity } from './entities/tag.entity';
@@ -29,7 +31,7 @@ import { TagsService } from './tags.service';
 
 @ApiTags('Tags')
 @ApiCookieAuth('Authentication')
-@Controller('tags')
+@Controller(ApiRoutes.TAGS)
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 

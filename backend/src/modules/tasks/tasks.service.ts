@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
 import { EntityListRequestBuilder } from '@pagination/builders/entity-list-request.builder';
@@ -19,6 +20,7 @@ export class TasksService {
     private readonly prisma: PrismaService,
     private readonly paginationService: PaginationService,
     private readonly auditLogger: AuditLoggerService,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -30,6 +32,7 @@ export class TasksService {
     userId: string,
   ): Promise<EntityListResponseDto<TaskEntity>> {
     // Build the query using the builder
+    console.log(taskListRequestDto);
     const query = new EntityListRequestBuilder(taskListRequestDto)
       .addFilter((filter) => {
         const where: Record<string, unknown> = {
@@ -64,7 +67,7 @@ export class TasksService {
     // Execute the query and get total count in parallel
     const [tasks, total] = await Promise.all([
       this.prisma.task
-        .findMany(query)
+        .findMany({ ...query, include: { tags: true } })
         .then((results) => results.map((task) => new TaskEntity(task))),
       this.prisma.task.count({ where: query.where }),
     ]);
@@ -84,6 +87,7 @@ export class TasksService {
   async findOneById(taskId: string, userId: string): Promise<TaskEntity> {
     const task = await this.prisma.task.findFirst({
       where: { id: taskId, userId },
+      include: { tags: true },
     });
 
     if (!task) {
@@ -102,9 +106,31 @@ export class TasksService {
     createTaskDto: CreateTaskDto,
     userId: string,
   ): Promise<TaskEntity> {
-    const task = await this.prisma.task.create({
-      data: { ...createTaskDto, userId },
-    });
+    const { tagIds = [], ...taskData } = createTaskDto;
+    const uniqueTagIds = [...new Set(tagIds)];
+
+    const task = await this.prisma.$transaction(
+      async (prisma: PrismaService) => {
+        await this.verifyTagsExist(
+          uniqueTagIds,
+          userId,
+          TaskAuditAction.TASK_CREATE_FAILURE,
+          prisma,
+        );
+
+        return await prisma.task.create({
+          data: {
+            ...taskData,
+            userId,
+            tags: {
+              create: uniqueTagIds.map((tagId) => ({
+                tag: { connect: { id_userId: { id: tagId, userId } } },
+              })),
+            },
+          },
+        });
+      },
+    );
 
     this.auditLogger.log({
       action: TaskAuditAction.TASK_CREATE_SUCCESS,
@@ -129,27 +155,72 @@ export class TasksService {
   ): Promise<TaskEntity> {
     // TODO: Think about a composite unique (id, userId) for tasks --> schema.prisma: @@unique([id, userId])
 
-    // Using updateMany to ensure userId is also matched to prevent updating tasks not owned by the user
-    // updateMany returns a count of updated records to verify if a task was updated
-    const updated = await this.prisma.task.updateMany({
-      where: { id: taskId, userId, deletedAt: null },
-      data: updateTaskDto,
-    });
+    const { tagIds, ...taskData } = updateTaskDto;
+    const needToUpdateTags = Array.isArray(tagIds);
 
-    if (updated.count === 0) {
-      this.auditLogger.log({
-        action: TaskAuditAction.TASK_UPDATE_FAILURE,
-        actorUserId: userId,
-        targetEntity: TaskEntity.name,
-        targetEntityId: taskId,
+    const updatedTask = await this.prisma
+      .$transaction(async (prisma: PrismaService) => {
+        // If tagIds are provided, verify that they exist and belong to the user
+        // If tagIds is undefined, it means the client did not intend to update tags, so we skip verification.
+        // If it's an empty array, it means the client wants to remove all tags, so we verify that the provided tagIds (which is an empty array) exist (which they do) and then proceed to update the task with no tags.
+        const uniqueTagIds = [...new Set(tagIds)];
+        if (needToUpdateTags) {
+          await this.verifyTagsExist(
+            uniqueTagIds,
+            userId,
+            TaskAuditAction.TASK_UPDATE_FAILURE,
+            prisma,
+          );
+        }
+
+        const task = await prisma.task.findUnique({
+          where: { id: taskId, userId, deletedAt: null },
+        });
+
+        if (!task) {
+          this.auditLogger.log({
+            action: TaskAuditAction.TASK_UPDATE_FAILURE,
+            actorUserId: userId,
+            targetEntity: TaskEntity.name,
+            targetEntityId: taskId,
+          });
+
+          throw new NotFoundException(`Task with ID ${taskId} not found`);
+        }
+
+        // Using updateMany to ensure userId is also matched to prevent updating tasks not owned by the user
+        // updateMany returns a count of updated records to verify if a task was updated
+        return await prisma.task.update({
+          where: { id: taskId, userId, deletedAt: null },
+          data: {
+            ...taskData,
+            tags: needToUpdateTags
+              ? {
+                  deleteMany: {}, // remove all current task-tag rows for this task
+                  create: uniqueTagIds.map((tagId) => ({
+                    tag: {
+                      connect: {
+                        id_userId: { id: tagId, userId },
+                      },
+                    },
+                  })),
+                }
+              : undefined,
+          },
+          include: { tags: true },
+        });
+      })
+      .catch((error) => {
+        this.auditLogger.log({
+          action: TaskAuditAction.TASK_UPDATE_FAILURE,
+          actorUserId: userId,
+          targetEntity: TaskEntity.name,
+          targetEntityId: taskId,
+          extraContext: { errorMessage: error.message },
+        });
+
+        throw error; // rethrow exceptions
       });
-
-      throw new NotFoundException(`Task with ID ${taskId} not found`);
-    }
-
-    const updatedTask = await this.prisma.task.findFirstOrThrow({
-      where: { id: taskId, userId, deletedAt: null },
-    });
 
     this.auditLogger.log({
       action: TaskAuditAction.TASK_UPDATE_SUCCESS,
@@ -266,6 +337,39 @@ export class TasksService {
         targetEntity: TaskEntity.name,
         targetEntityId: taskId,
       });
+    }
+  }
+
+  private async verifyTagsExist(
+    tagIds: string[],
+    userId: string,
+    auditFailureAction: TaskAuditAction,
+    prisma: PrismaService = this.prisma,
+  ): Promise<void> {
+    if (tagIds.length > 0) {
+      const existingTags = await prisma.tag.findMany({
+        select: { id: true },
+        where: { id: { in: tagIds }, userId },
+      });
+
+      const foundIds = new Set(existingTags.map((t) => t.id));
+      const missingIds = tagIds.filter((id) => !foundIds.has(id));
+
+      if (missingIds.length > 0) {
+        this.auditLogger.log({
+          action: auditFailureAction,
+          actorUserId: userId,
+          targetEntity: TaskEntity.name,
+          extraContext: { missingTagIds: missingIds },
+        });
+        this.logger.warn(
+          `${auditFailureAction}: Tag(s) not found with IDs ${missingIds.join(', ')} for user ${userId}`,
+        );
+
+        throw new NotFoundException(
+          `Tag(s) not found: ${missingIds.join(', ')}`,
+        );
+      }
     }
   }
 }

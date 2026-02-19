@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -7,6 +9,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
+import { IsCuid } from '@decorators/is-cuid.decorator';
 import { TaskStatus } from '@generated/prisma';
 
 /**
@@ -40,4 +43,15 @@ export class CreateTaskDto {
   @IsEnum(TaskStatus, { message: 'Status must be a valid TaskStatus' })
   @IsOptional()
   status: TaskStatus;
+
+  @ApiPropertyOptional({
+    description: 'Array of tag IDs to associate with the task.',
+    example: ['tag-1', 'tag-2'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray({ message: 'Tag IDs must be an array' })
+  @ArrayUnique({ message: 'Tag IDs must be unique' })
+  @IsCuid({ each: true, message: 'Each tag ID must be a valid CUID' })
+  tagIds?: string[];
 }

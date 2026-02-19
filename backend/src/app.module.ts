@@ -14,6 +14,7 @@ import { AccountPreferencesModule } from '@modules/account-preferences/account-p
 import { AuthModule } from '@modules/auth/auth.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { ProjectsModule } from '@modules/projects/projects.module';
+import { SchedulerModule } from '@modules/scheduler/scheduler.module';
 import { TasksModule } from '@modules/tasks/tasks.module';
 import { UsersModule } from '@modules/users/users.module';
 import { TagsModule } from './modules/tags/tags.module';
@@ -37,6 +38,7 @@ import { TagsModule } from './modules/tags/tags.module';
     ConfigModule,
     DatabaseModule,
     LoggerModule,
+    SchedulerModule,
 
     // * Feature modules
     AuthModule,

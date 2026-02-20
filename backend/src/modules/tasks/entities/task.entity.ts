@@ -1,5 +1,5 @@
 import { BaseEntity } from '@entities/base.entity';
-import { TaskStatus } from '@generated/prisma';
+import { TaskReminderStatus, TaskStatus } from '@generated/prisma';
 
 /**
  * Entity representing a Task in the system.
@@ -9,6 +9,10 @@ export class TaskEntity extends BaseEntity {
   description: string | null;
   userId: string;
   status: TaskStatus;
+  dueDate: Date | null;
+  remindAt: Date | null;
+  reminderStatus: TaskReminderStatus;
+  tagIds: string[];
 
   constructor(partial: Partial<TaskEntity>) {
     super();

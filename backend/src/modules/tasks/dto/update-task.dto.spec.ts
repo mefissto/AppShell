@@ -76,14 +76,14 @@ describe('UpdateTaskDto', () => {
     expect(statusError).toBeDefined();
   });
 
-  it('fails when dueAt uses a non-ISO separator', async () => {
+  it('fails when dueDate uses a non-ISO separator', async () => {
     const dto = makeDto({
-      dueAt: '2026-02-02 19:00:00.000' as unknown as Date,
+      dueDate: '2026-02-02 19:00:00.000' as unknown as Date,
     });
 
     const errors = await validate(dto);
-    const dueAtError = errors.find((e) => e.property === 'dueAt');
+    const dueDateError = errors.find((e) => e.property === 'dueDate');
 
-    expect(dueAtError).toBeDefined();
+    expect(dueDateError).toBeDefined();
   });
 });

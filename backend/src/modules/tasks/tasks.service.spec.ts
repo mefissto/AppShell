@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
-import { TaskStatus } from '@generated/prisma';
+import { TaskReminderStatus, TaskStatus } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { PaginationService } from '@pagination/services/pagination.service';
@@ -473,6 +473,63 @@ describe('TasksService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(prisma.task.findFirstOrThrow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findTasksWithPendingReminders', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-02-20T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should query pending reminders in today range and map to TaskEntity', async () => {
+      const task = {
+        ...mockTask(),
+        remindAt: new Date('2026-02-20T08:00:00.000Z'),
+        dueDate: new Date('2026-02-20T20:00:00.000Z'),
+        reminderStatus: TaskReminderStatus.PENDING,
+      };
+      prisma.task.findMany.mockResolvedValueOnce([task]);
+
+      const result = await service.findTasksWithPendingReminders();
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: {
+          reminderStatus: TaskReminderStatus.PENDING,
+          remindAt: {
+            not: null,
+            gte: new Date(2026, 1, 20),
+            lte: new Date(2026, 1, 21),
+          },
+        },
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(TaskEntity);
+      expect(result[0]).toEqual(expect.objectContaining({ id: 'task-1' }));
+    });
+  });
+
+  describe('markTaskReminderSent', () => {
+    it('should update reminder status to SENT and clear remindAt', async () => {
+      const updatedTask = {
+        ...mockTask(),
+        remindAt: null,
+        reminderStatus: TaskReminderStatus.SENT,
+      };
+      prisma.task.update.mockResolvedValueOnce(updatedTask);
+
+      const result = await service.markTaskReminderSent('task-1');
+
+      expect(prisma.task.update).toHaveBeenCalledWith({
+        where: { id: 'task-1' },
+        data: { reminderStatus: TaskReminderStatus.SENT, remindAt: null },
+      });
+      expect(result).toBeInstanceOf(TaskEntity);
+      expect(result).toEqual(expect.objectContaining({ id: 'task-1' }));
     });
   });
 });

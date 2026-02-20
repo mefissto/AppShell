@@ -66,7 +66,7 @@ export class CreateTaskDto {
     { strict: true, strictSeparator: true },
     { message: 'Due date must be a valid ISO 8601 date string' },
   )
-  dueAt?: Date;
+  dueDate?: Date;
 
   @ApiPropertyOptional({
     description: 'Reminder date for the task.',
@@ -77,7 +77,7 @@ export class CreateTaskDto {
     { strict: true, strictSeparator: true },
     { message: 'Reminder date must be a valid ISO 8601 date string' },
   )
-  @IsBefore('dueAt', {
+  @IsBefore('dueDate', {
     message: 'Reminder date must be equal to or before the due date',
   })
   remindAt?: Date;

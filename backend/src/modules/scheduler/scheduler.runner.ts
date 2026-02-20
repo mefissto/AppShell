@@ -8,24 +8,27 @@ export class SchedulerRunner {
     this.logger.setContext(SchedulerRunner.name);
   }
 
-  async execute(jobName: string, callback: () => Promise<void>) {
-    const startedAt = Date.now();
+  async execute(jobName: string, handler: () => Promise<void>) {
+    const startedAt = performance.now();
     this.logger.log({ jobName, event: 'start' });
 
     try {
-      await callback();
+      await handler();
       this.logger.log({
         jobName,
         event: 'success',
-        durationMs: Date.now() - startedAt,
+        durationMs: performance.now() - startedAt,
       });
     } catch (error) {
       this.logger.error({
         jobName,
         event: 'failed',
-        durationMs: Date.now() - startedAt,
+        durationMs: performance.now() - startedAt,
         error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
       });
+
+      throw error; // rethrow to allow Nest's scheduler to handle retries/failures as configured
     }
   }
 }

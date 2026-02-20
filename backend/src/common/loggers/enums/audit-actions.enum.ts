@@ -50,10 +50,18 @@ export enum ProjectAuditAction {
   PROJECT_OWNER_UPDATE_FAILURE = 'PROJECT_OWNER_UPDATE_FAILURE',
 }
 
+export enum JobAuditAction {
+  TASK_REMINDERS_EXECUTION_SUCCESS = 'TASK_REMINDERS_EXECUTION_SUCCESS',
+  TASK_REMINDERS_EXECUTION_FAILURE = 'TASK_REMINDERS_EXECUTION_FAILURE',
+  SESSION_CLEANUP_EXECUTION_SUCCESS = 'SESSION_CLEANUP_EXECUTION_SUCCESS',
+  SESSION_CLEANUP_EXECUTION_FAILURE = 'SESSION_CLEANUP_EXECUTION_FAILURE',
+}
+
 export type AuditAction =
   | SystemAuditAction
   | AuthAuditAction
   | UserAuditAction
   | AccountPreferencesAuditAction
   | TaskAuditAction
-  | ProjectAuditAction;
+  | ProjectAuditAction
+  | JobAuditAction;

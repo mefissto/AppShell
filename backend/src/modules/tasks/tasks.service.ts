@@ -351,6 +351,38 @@ export class TasksService {
     }
   }
 
+  async findTasksWithPendingReminders(): Promise<TaskEntity[]> {
+    const now = new Date();
+    const startOfCurrentDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const startOfNextDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+    );
+
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        reminderStatus: TaskReminderStatus.PENDING,
+        remindAt: { not: null, lte: startOfNextDay, gte: startOfCurrentDay },
+      },
+    });
+
+    return tasks.map((task) => new TaskEntity(task));
+  }
+
+  async markTaskReminderSent(taskId: string): Promise<TaskEntity> {
+    const task = await this.prisma.task.update({
+      where: { id: taskId },
+      data: { reminderStatus: TaskReminderStatus.SENT, remindAt: null },
+    });
+
+    return new TaskEntity(task);
+  }
+
   private async verifyTagsExist(
     tagIds: string[],
     userId: string,

@@ -1,10 +1,15 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    MaxLength,
-    MinLength,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
+
+import { IsValidMetadata } from '@decorators/validators/is-valid-metadata.decorator';
+import { Prisma } from '@generated/prisma';
 
 export class CreateProjectDto {
   @IsString({ message: 'Project name must be a string' })
@@ -21,4 +26,30 @@ export class CreateProjectDto {
   })
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional project metadata. Allowed top-level namespace is `custom` only.',
+    example: {
+      custom: {
+        source: 'imported',
+      },
+    },
+    type: 'object',
+    additionalProperties: true,
+  })
+  @IsOptional()
+  @IsObject({ message: 'Metadata must be an object' })
+  @IsValidMetadata(
+    {
+      maxSizeInBytes: 8 * 1024, // 8KB
+      allowedNamespaces: ['custom'],
+      forbiddenKeys: ['password', 'token', 'refreshToken', 'authorization'],
+    },
+    {
+      message:
+        'Metadata exceeds constraints: max size 8KB, allowed namespace custom only, and forbidden keys password/token/refreshToken/authorization',
+    },
+  )
+  metadata?: Prisma.JsonObject;
 }

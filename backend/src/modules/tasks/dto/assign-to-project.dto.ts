@@ -1,6 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 
-import { IsCuid } from '@decorators/is-cuid.decorator';
+import { IsCuid } from '@decorators/validators/is-cuid.decorator';
 
 export class AssignToProjectDto {
   @IsNotEmpty({ message: 'projectId is required' })

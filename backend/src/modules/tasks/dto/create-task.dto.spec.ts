@@ -81,4 +81,64 @@ describe('CreateTaskDto', () => {
 
     expect(statusError).toBeDefined();
   });
+
+  it('allows metadata with only custom namespace', async () => {
+    const dto = makeDto({
+      metadata: {
+        custom: {
+          source: 'imported',
+          flags: ['urgent'],
+        },
+      },
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors).toHaveLength(0);
+  });
+
+  it('fails when metadata exceeds 8KB', async () => {
+    const dto = makeDto({
+      metadata: {
+        custom: {
+          payload: 'x'.repeat(9 * 1024),
+        },
+      },
+    });
+
+    const errors = await validate(dto);
+    const metadataError = errors.find((e) => e.property === 'metadata');
+
+    expect(metadataError).toBeDefined();
+  });
+
+  it('fails when metadata uses a non-allowed namespace', async () => {
+    const dto = makeDto({
+      metadata: {
+        system: {
+          source: 'internal',
+        },
+      },
+    });
+
+    const errors = await validate(dto);
+    const metadataError = errors.find((e) => e.property === 'metadata');
+
+    expect(metadataError).toBeDefined();
+  });
+
+  it('fails when metadata contains forbidden keys', async () => {
+    const dto = makeDto({
+      metadata: {
+        custom: {
+          refreshToken: 'secret',
+        },
+      },
+    });
+
+    const errors = await validate(dto);
+    const metadataError = errors.find((e) => e.property === 'metadata');
+
+    expect(metadataError).toBeDefined();
+  });
 });

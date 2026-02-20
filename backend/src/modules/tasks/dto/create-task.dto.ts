@@ -5,14 +5,16 @@ import {
   IsEnum,
   IsISO8601,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
 
-import { IsBefore } from '@decorators/is-before.decorator';
-import { IsCuid } from '@decorators/is-cuid.decorator';
-import { TaskStatus } from '@generated/prisma';
+import { IsBefore } from '@decorators/validators/is-before.decorator';
+import { IsCuid } from '@decorators/validators/is-cuid.decorator';
+import { IsValidMetadata } from '@decorators/validators/is-valid-metadata.decorator';
+import { Prisma, TaskStatus } from '@generated/prisma';
 
 /**
  * Data Transfer Object for creating a new task.
@@ -81,4 +83,30 @@ export class CreateTaskDto {
     message: 'Reminder date must be equal to or before the due date',
   })
   remindAt?: Date;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional task metadata. Allowed top-level namespace is `custom` only.',
+    example: {
+      custom: {
+        source: 'imported',
+      },
+    },
+    type: 'object',
+    additionalProperties: true,
+  })
+  @IsOptional()
+  @IsObject({ message: 'Metadata must be an object' })
+  @IsValidMetadata(
+    {
+      maxSizeInBytes: 8 * 1024, // 8KB
+      allowedNamespaces: ['custom'],
+      forbiddenKeys: ['password', 'token', 'refreshToken', 'authorization'],
+    },
+    {
+      message:
+        'Metadata exceeds constraints: max size 8KB, allowed namespace custom only, and forbidden keys password/token/refreshToken/authorization',
+    },
+  )
+  metadata?: Prisma.JsonObject;
 }

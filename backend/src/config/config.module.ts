@@ -8,6 +8,7 @@ import databaseConfig from './database.config';
 import envValidationSchema from './environment.validation';
 import jwtConfig from './jwt.config';
 import notificationsConfig from './notifications.config';
+import schedulerConfig from './scheduler.config';
 
 /**
  * Load the environment file based on the NODE_ENV environment variable
@@ -21,7 +22,13 @@ const envFilePath = env ? `.env.${env}` : '.env';
     NestConfigModule.forRoot({
       isGlobal: true,
       envFilePath,
-      load: [appConfig, databaseConfig, jwtConfig, notificationsConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        notificationsConfig,
+        schedulerConfig,
+      ],
       validate: (config) => {
         const { error, value, warning } = envValidationSchema.validate(config, {
           allowUnknown: env !== EnvironmentModes.PRODUCTION,

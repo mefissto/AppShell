@@ -28,6 +28,7 @@ export const enum EnvironmentVariableKeys {
   DATABASE = 'database',
   JWT = 'jwt',
   NOTIFICATIONS = 'notifications',
+  SCHEDULER = 'scheduler',
 }
 
 /**
@@ -77,4 +78,13 @@ export interface NotificationsEnvConfig {
     from: string;
     fromName: string;
   };
+}
+
+/**
+ * Scheduler environment configuration interface
+ */
+export interface SchedulerEnvConfig {
+  cronJobsEnabled: boolean;
+  cronCleanupSessions: string;
+  cronTaskReminders: string;
 }

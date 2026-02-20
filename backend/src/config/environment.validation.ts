@@ -1,3 +1,4 @@
+import cron from 'cron-validate';
 import * as Joi from 'joi';
 
 import { EnvironmentModes } from '@interfaces/environment-variables';
@@ -15,6 +16,29 @@ const portValidation = (value: string) => {
   }
   return num;
 };
+
+// Custom Joi extension for validating cron expressions`
+const cronExpressionSchema = Joi.string()
+  .trim()
+  .custom((value, helpers) => {
+    const result = cron(value, {
+      preset: 'default',
+      override: {
+        // Set `useSeconds: false` to remove support 6-field cron: sec min hour day month weekday
+        useSeconds: true,
+        useYears: false,
+        useAliases: true, // MON, JAN, etc.
+      },
+    });
+
+    if (!result.isValid()) {
+      return helpers.error('any.invalid', {
+        message: `Invalid cron expression: ${value}`,
+      });
+    }
+
+    return value;
+  }, 'Cron expression validation');
 
 /**
  * Joi schema for validating and transforming environment variables
@@ -67,4 +91,9 @@ export default Joi.object({
   RESEND_API_KEY: Joi.string().min(20).required(),
   NOTIFICATION_FROM_EMAIL: Joi.string().email().required(),
   NOTIFICATION_FROM_NAME: Joi.string().min(2).required(),
+
+  // SCHEDULER
+  CRON_JOBS_ENABLED: Joi.string().valid('true', 'false').required(),
+  TASK_REMINDER_CRON: cronExpressionSchema.required(),
+  CLEANUP_SESSIONS_CRON: cronExpressionSchema.required(),
 });

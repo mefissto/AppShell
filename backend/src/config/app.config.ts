@@ -31,5 +31,9 @@ export default registerAs(
       10,
     ),
     emailVerificationUrl: process.env.EMAIL_VERIFICATION_URL as string,
+    healthCheckDiskThresholdPercent: parseFloat(
+      process.env.HEALTH_CHECK_DISK_THRESHOLD_PERCENT as string,
+    ),
+    healthCheckDiskPath: process.env.HEALTH_CHECK_DISK_PATH as string,
   }),
 );

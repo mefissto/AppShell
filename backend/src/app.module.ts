@@ -15,9 +15,10 @@ import { AuthModule } from '@modules/auth/auth.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { ProjectsModule } from '@modules/projects/projects.module';
 import { SchedulerModule } from '@modules/scheduler/scheduler.module';
+import { TagsModule } from '@modules/tags/tags.module';
 import { TasksModule } from '@modules/tasks/tasks.module';
 import { UsersModule } from '@modules/users/users.module';
-import { TagsModule } from './modules/tags/tags.module';
+import { HealthModule } from '@system/health/health.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { TagsModule } from './modules/tags/tags.module';
     ProjectsModule,
     AccountPreferencesModule,
     TagsModule,
+    HealthModule,
   ],
   providers: [
     {

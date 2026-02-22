@@ -31,6 +31,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^11.2.4",
+    "@nestjs/terminus": "^11.1.1",
     "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "7.4.0",
     "@prisma/client": "^7.4.0",
@@ -111,6 +112,7 @@
       "^@generated/(.*)$": "<rootDir>/../generated/$1",
       "^@database/(.*)$": "<rootDir>/database/$1",
       "^@modules/(.*)$": "<rootDir>/modules/$1",
+      "^@system/(.*)$": "<rootDir>/system/$1",
       "^@common/(.*)$": "<rootDir>/common/$1",
       "^@loggers/(.*)$": "<rootDir>/common/loggers/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"

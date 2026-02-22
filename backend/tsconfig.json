@@ -36,6 +36,7 @@
       "@generated/*": ["generated/*"],
       "@database/*": ["src/database/*"],
       "@modules/*": ["src/modules/*"],
+      "@system/*": ["src/system/*"],
       "@common/*": ["src/common/*"]
     }
   }

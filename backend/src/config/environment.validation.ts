@@ -70,6 +70,13 @@ export default Joi.object({
   LOG_LEVEL: Joi.string()
     .valid('verbose', 'debug', 'log', 'warn', 'error', 'fatal')
     .required(),
+  HEALTH_CHECK_DISK_THRESHOLD_PERCENT: Joi.number()
+    .positive()
+    .greater(0)
+    .precision(2)
+    .less(1)
+    .default(0.9), // 90% usage threshold
+  HEALTH_CHECK_DISK_PATH: Joi.string().default('/'),
 
   // DATABASE
   DATABASE_URL: Joi.string().uri().required(),

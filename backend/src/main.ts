@@ -65,6 +65,14 @@ async function bootstrap() {
     SwaggerModule.createDocument(app, SWAGGER_CONFIG);
   SwaggerModule.setup(SWAGGER_DOCS_PATH, app, documentFactory);
 
+  /**
+   * Starts listening for shutdown hooks
+   * This feature is often used with Kubernetes to manage containers' lifecycles, by Heroku for dynos or similar services.
+   *
+   * See https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
+   */
+  app.enableShutdownHooks();
+
   const { port } = app.get(appConfig.KEY);
 
   await app.listen(port);

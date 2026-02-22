@@ -46,6 +46,8 @@ export interface AppEnvConfig {
   logLevel: LogLevel;
   emailVerificationTokenTtl: number;
   emailVerificationUrl: string;
+  healthCheckDiskThresholdPercent: number;
+  healthCheckDiskPath: string;
 }
 
 /**

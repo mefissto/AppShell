@@ -1,0 +1,13 @@
+FROM node:lts-alpine3.22@sha256:d28696cabe6a72c5addbb608b344818e5a158d849174abd4b1ae85ab48536280
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY ./prisma ./prisma
+COPY prisma.config.ts .
+
+
+CMD [ "npx", "prisma", "migrate", "deploy" ]

@@ -1,0 +1,198 @@
+name: AppShell-Backend
+
+# Operations Quick Commands (reference)
+# - Start full stack (DB + migrations + backend):
+#   docker compose up --wait
+# - Rebuild and start after Dockerfile/compose changes:
+#   docker compose up --build --wait
+# - Stop and remove containers/network (keep named volumes):
+#   docker compose down
+# - Stop and remove containers/network + volumes (destructive for local DB data):
+#   docker compose down -v
+# - Run manual migrations via ops profile only:
+#   docker compose --profile ops run --rm migrations-manual
+# - View merged config exactly as Docker Compose sees it:
+#   docker compose config
+
+# structure ${ENV_VARIABLE:-default_value} allows us to set default values for environment variables if they are not defined in the .env file or the environment itself. 
+# This is useful for providing fallback values and ensuring that the application can still run even if certain environment variables are missing.
+
+# Shared service defaults to keep behavior consistent across containers.
+# We keep these in one place so future changes are made once and applied everywhere.
+x-service-defaults: &service-defaults
+  # Gives the process time to shut down cleanly after `docker compose stop`.
+  # This prevents abrupt SIGKILL and helps avoid partial writes or corrupt state.
+  stop_grace_period: 30s
+
+  # Limit container log growth on local machines.
+  # `max-size` rotates a log file after it reaches the size; `max-file` keeps only N rotated files.
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+
+  # The backend service is built from the local Dockerfile and tagged for easy reference. It maps the configured application port to the host, allowing access to the backend API. The develop.watch configuration enables live syncing of code changes during development. Environment variables are loaded from a .env file, with overrides for database connection settings to ensure proper connectivity within the Docker network. The service depends on the database and migrations services, with health checks to ensure they are ready before starting. The backend will restart unless stopped manually, providing resilience in case of failures.
+  backend:
+    <<: *service-defaults
+    container_name: Backend-Service
+    
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      tags: 
+        - AppShell/backend:latest
+    
+    ports:
+      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
+    
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+    
+    env_file:
+      - .env.development 
+    
+    environment:
+      # IMPORTANT: inside Docker, "localhost" means the backend container itself (not PostgreSQL).
+      # Use the service name "database" so backend can reach the Postgres container over the Docker network.
+      DATABASE_HOST: database
+      # Override DATABASE_URL from .env when running in Docker.
+      # Host machine value usually points to localhost, which causes ECONNREFUSED inside containers.
+      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:${DATABASE_PORT:-5432}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}
+    
+    depends_on:
+      database: 
+        condition: service_healthy
+        restart: true
+      migrations:
+        condition: service_completed_successfully
+        restart: false # Don't restart backend if migrations fail, to avoid infinite loops. We want to see the error and fix it.
+    
+    healthcheck:
+      # 'curl' may not be installed in the base image and we may need to install it in the Dockerfile for this to work.
+      test: ["CMD-SHELL", "curl -f http://localhost:${APP_PORT:-3000}/health/ready || exit 1"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+    # Soft resource caps for local development.
+    # These reduce the chance that one container monopolizes your machine.
+    cpus: "1.0"
+    mem_limit: 1g
+
+    # Backend may need a bit more time for graceful shutdown (in-flight requests, flush logs).
+    stop_grace_period: 45s
+    
+    restart: unless-stopped
+  
+  # The database service uses the official Postgres image with a specific version digest for consistency and security. It exposes the configured port and sets up environment variables for initialization. A healthcheck ensures the database is ready before the backend starts, and a named volume is used to persist data across container restarts.
+  database:
+    <<: *service-defaults
+    container_name: Database-Service
+    
+    image: postgres:alpine3.22@sha256:cf70b3d7aeb0f399ba29e94ce081380ccade1f4c38e203309068a30f49548417
+    
+    ports:
+      - "${DATABASE_PORT:-5432}:${DATABASE_PORT:-5432}"
+    
+    env_file:
+      - .env.development
+    
+    environment:
+      # These are the official init variables used by the postgres image on first startup.
+      # They create the initial DB user and database in /var/lib/postgresql/data.
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    
+    volumes:
+      # Persist database files in a named volume so data survives container restarts/recreates.
+      - db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      # Marks DB as healthy only when it accepts connections with the configured credentials/database.
+      # backend.depends_on waits for this healthcheck before backend startup.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres -h localhost -p $${DATABASE_PORT}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Keep DB resource usage predictable for local development.
+    cpus: "1.0"
+    mem_limit: 1g
+
+    # Database should have more time to flush buffers and checkpoints when stopping.
+    stop_grace_period: 60s
+
+    restart: unless-stopped
+
+  # Migrations service runs Prisma migrations on startup, ensuring the database schema is up to date before the backend starts.
+  migrations:
+    <<: *service-defaults
+    container_name: Migrations-Service
+    
+    build: 
+      context: .
+      dockerfile: Dockerfile.migrations
+      tags: 
+        - AppShell/migrations:latest
+    
+    depends_on:
+      database:
+        condition: service_healthy
+        restart: false # Don't restart migrations if they fail, to avoid infinite loops. We want to see the error and fix it.
+    
+    environment:
+      # Migrations must target the DB container hostname on the Docker network.
+      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:${DATABASE_PORT:-5432}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}
+    
+    env_file:
+      - .env.development
+
+    # Migration job is short-lived and low-resource; explicit limits avoid accidental contention.
+    cpus: "0.5"
+    mem_limit: 512m
+
+    restart: "no" # Don't restart migrations automatically, to avoid infinite loops on failure. We want to see the error and fix it.
+
+  # Optional profile-based migration runner for manual operational runs.
+  # Why this exists:
+  # - You may want to run migrations on demand without starting the full stack.
+  # - Profiles let you opt into this service only when needed.
+  # How to use:
+  # - `docker compose --profile ops run --rm migrations-manual`
+  # - This does NOT change the default startup path (`migrations` still runs automatically).
+  migrations-manual:
+    <<: *service-defaults
+    profiles: ["ops"]
+
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+      tags:
+        - AppShell/migrations:latest
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    env_file:
+      - .env.development
+
+    environment:
+      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:${DATABASE_PORT:-5432}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}
+
+    cpus: "0.5"
+    mem_limit: 512m
+    restart: "no"
+
+
+volumes:
+  db_data:
+    name: ${DATABASE_VOLUME:-db_data} # Name from .env.development for database persistence

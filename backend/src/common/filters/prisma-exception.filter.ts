@@ -113,6 +113,20 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       case 'P2015':
         return this.handleLazyRelationLoadingViolation(exception);
 
+      case 'P1000':
+      case 'P1001':
+      case 'ECONNREFUSED':
+        this.logger.error(
+          `Database connection refused: ${exception.message}`,
+          exception.stack,
+          `Prisma error code: ${exception.code}`,
+        );
+
+        return {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Database connection refused',
+        };
+
       default:
         this.logger.error('Unhandled Prisma error:', {
           code: exception.code,

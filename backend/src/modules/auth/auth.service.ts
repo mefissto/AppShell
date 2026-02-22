@@ -68,6 +68,26 @@ export class AuthService {
       new Date().getTime() + this.config.emailVerificationTokenTtl,
     );
 
+    const existingUser = await this.usersService.findUnique({
+      email: signUpDto.email,
+    });
+
+    if (existingUser) {
+      this.auditLogger.log({
+        action: UserAuditAction.USER_CREATE_FAILURE,
+        actorUserId: existingUser.id,
+        targetEntity: UserEntity.name,
+        targetEntityId: existingUser.id,
+        extraContext: {
+          reason: `User with email ${signUpDto.email} already exists`,
+        },
+      });
+
+      throw new BadRequestException(
+        `User with email ${signUpDto.email} already exists`,
+      );
+    }
+
     await this.notificationsService.sendEmailVerificationEmail({
       to: signUpDto.email,
       subject: 'Verify Your Email Address',

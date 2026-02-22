@@ -7,6 +7,7 @@ import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { UserAuditAction } from '@loggers/enums/audit-actions.enum';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
@@ -176,12 +177,15 @@ describe('AuthService', () => {
         email: 'test@example.com',
         password: 'StrongP@ssw0rd!',
       };
+      const user = mockUser();
+
+      usersService.findUnique.mockResolvedValueOnce(null);
       hashingService.generateRandomHash.mockReturnValueOnce('raw-token');
       hashingService.hash.mockResolvedValueOnce('hashed-token');
       notificationsService.sendEmailVerificationEmail.mockResolvedValueOnce(
         undefined,
       );
-      usersService.create.mockResolvedValueOnce(mockUser());
+      usersService.create.mockResolvedValueOnce(user);
 
       await authService.signUp(signUpDto);
 
@@ -201,6 +205,44 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith(signUpDto, {
         emailVerificationToken: 'hashed-token',
         emailVerificationTokenExpiresAt: expect.any(Date),
+      });
+      expect(auditLoggerService.log).toHaveBeenCalledWith({
+        action: UserAuditAction.USER_CREATE_SUCCESS,
+        actorUserId: user.id,
+        targetEntity: 'UserEntity',
+        targetEntityId: user.id,
+      });
+    });
+
+    it('should throw when user with the same email already exists', async () => {
+      const signUpDto = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'StrongP@ssw0rd!',
+      };
+      const existingUser = mockUser();
+
+      usersService.findUnique.mockResolvedValueOnce(existingUser);
+
+      await expect(authService.signUp(signUpDto)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(usersService.findUnique).toHaveBeenCalledWith({
+        email: signUpDto.email,
+      });
+      expect(
+        notificationsService.sendEmailVerificationEmail,
+      ).not.toHaveBeenCalled();
+      expect(usersService.create).not.toHaveBeenCalled();
+      expect(auditLoggerService.log).toHaveBeenCalledWith({
+        action: UserAuditAction.USER_CREATE_FAILURE,
+        actorUserId: existingUser.id,
+        targetEntity: 'UserEntity',
+        targetEntityId: existingUser.id,
+        extraContext: {
+          reason: `User with email ${signUpDto.email} already exists`,
+        },
       });
     });
   });

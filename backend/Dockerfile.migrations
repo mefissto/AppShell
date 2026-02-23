@@ -1,13 +1,57 @@
+# ======================================
+# Migrations Dockerfile (explained)
+# ======================================
+# This image is intentionally minimal and focused only on running Prisma migrations.
+# It does NOT include full backend dependencies.
+
+# Pin Node + Alpine image by digest for repeatable builds.
+# Why: prevents unexpected changes from floating tags and keeps CI/local parity.
 FROM node:lts-alpine3.22@sha256:d28696cabe6a72c5addbb608b344818e5a158d849174abd4b1ae85ab48536280
 
+# Set default working directory.
+# Why: keeps path handling simple for prisma config/schema files.
 WORKDIR /app
 
-COPY package*.json ./
+# Create a tiny package context and install only runtime tools required for migrations.
+# Step-by-step:
+# - `npm init -y`: generates package.json quickly in this minimal image context.
+# - `npm pkg set private=true`: avoids accidental publishing semantics.
+# - `npm pkg set dependencies.prisma=7.4.0`: install Prisma CLI at known version.
+# - `npm pkg set dependencies.dotenv=17.2.3`: allows `import "dotenv/config"` in prisma.config.ts.
+# - `npm install --omit=dev`: install only production dependencies for smaller image.
+# - `npm cache clean --force`: remove cache to reduce image size.
+RUN npm init -y \
+    && npm pkg set private=true \
+    && npm pkg set dependencies.prisma=7.4.0 \
+    && npm pkg set dependencies.dotenv=17.2.3 \
+    && npm install --omit=dev \
+    && npm cache clean --force
 
-RUN npm ci
-
+# Copy Prisma schema and migrations directory.
+# Why: `prisma migrate deploy` reads migration history from here.
 COPY ./prisma ./prisma
+
+# Copy Prisma runtime config.
+# Why: your schema uses config-driven datasource URL resolution via prisma.config.ts.
 COPY prisma.config.ts .
 
 
+# Run migrations in deploy mode.
+# Why: applies existing migrations only; safe and deterministic for container startup.
 CMD [ "npx", "prisma", "migrate", "deploy" ]
+
+# -----------------------------------------------------------------------------
+# Previous simpler version (reference only; commented out intentionally)
+# -----------------------------------------------------------------------------
+# FROM node:lts-alpine3.22@sha256:d28696cabe6a72c5addbb608b344818e5a158d849174abd4b1ae85ab48536280
+#
+# WORKDIR /app
+#
+# COPY package*.json ./
+#
+# RUN npm ci
+#
+# COPY ./prisma ./prisma
+# COPY prisma.config.ts .
+#
+# CMD [ "npx", "prisma", "migrate", "deploy" ]

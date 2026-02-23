@@ -38,6 +38,9 @@ services:
   backend:
     <<: *service-defaults
     container_name: Backend-Service
+
+    env_file:
+      - .env
     
     build: 
       context: .
@@ -53,17 +56,6 @@ services:
         - action: sync
           path: .
           target: /app
-    
-    env_file:
-      - .env.development 
-    
-    environment:
-      # IMPORTANT: inside Docker, "localhost" means the backend container itself (not PostgreSQL).
-      # Use the service name "database" so backend can reach the Postgres container over the Docker network.
-      DATABASE_HOST: database
-      # Override DATABASE_URL from .env when running in Docker.
-      # Host machine value usually points to localhost, which causes ECONNREFUSED inside containers.
-      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:${DATABASE_PORT:-5432}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}
     
     depends_on:
       database: 
@@ -101,15 +93,14 @@ services:
     ports:
       - "${DATABASE_PORT:-5432}:${DATABASE_PORT:-5432}"
     
-    env_file:
-      - .env.development
-    
     environment:
       # These are the official init variables used by the postgres image on first startup.
       # They create the initial DB user and database in /var/lib/postgresql/data.
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_HOST: ${DATABASE_HOST}
+      POSTGRES_PORT: ${DATABASE_PORT}
     
     volumes:
       # Persist database files in a named volume so data survives container restarts/recreates.
@@ -118,7 +109,7 @@ services:
     healthcheck:
       # Marks DB as healthy only when it accepts connections with the configured credentials/database.
       # backend.depends_on waits for this healthcheck before backend startup.
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres -h localhost -p $${DATABASE_PORT}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres -h $${POSTGRES_HOST} -p $${POSTGRES_PORT} || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -147,13 +138,9 @@ services:
       database:
         condition: service_healthy
         restart: false # Don't restart migrations if they fail, to avoid infinite loops. We want to see the error and fix it.
-    
+
     environment:
-      # Migrations must target the DB container hostname on the Docker network.
-      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:${DATABASE_PORT:-5432}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}
-    
-    env_file:
-      - .env.development
+      DATABASE_URL: ${DATABASE_URL}
 
     # Migration job is short-lived and low-resource; explicit limits avoid accidental contention.
     cpus: "0.5"
@@ -182,11 +169,8 @@ services:
       database:
         condition: service_healthy
 
-    env_file:
-      - .env.development
-
     environment:
-      DATABASE_URL: postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@database:${DATABASE_PORT:-5432}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}
+      DATABASE_URL: ${DATABASE_URL}
 
     cpus: "0.5"
     mem_limit: 512m

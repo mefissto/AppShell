@@ -3,14 +3,15 @@ import type { ConfigType } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
-import appConfig from '@config/app.config';
+import securityConfig from '@config/security.config';
+
 import { HashingService } from './hashing.service';
 
 @Injectable()
 export class BcryptHashingService implements HashingService {
   constructor(
-    @Inject(appConfig.KEY)
-    private readonly config: ConfigType<typeof appConfig>,
+    @Inject(securityConfig.KEY)
+    private readonly config: ConfigType<typeof securityConfig>,
   ) {}
 
   async hash(payload: string): Promise<string> {

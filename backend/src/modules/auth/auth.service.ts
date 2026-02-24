@@ -10,6 +10,7 @@ import type { ConfigType } from '@nestjs/config';
 import { Request, Response } from 'express';
 
 import appConfig from '@config/app.config';
+import authConfig from '@config/auth.config';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 import { JwtPayload } from '@interfaces/jwt-payload';
@@ -35,7 +36,9 @@ import { JwtTokenProvider } from './providers/jwt-token.provider';
 export class AuthService {
   constructor(
     @Inject(appConfig.KEY)
-    private readonly config: ConfigType<typeof appConfig>,
+    private readonly appEnvConfig: ConfigType<typeof appConfig>,
+    @Inject(authConfig.KEY)
+    private readonly authEnvConfig: ConfigType<typeof authConfig>,
     private readonly usersService: UsersService,
     private readonly sessionsService: SessionsService,
     private readonly jwtTokenProvider: JwtTokenProvider,
@@ -65,7 +68,7 @@ export class AuthService {
   async signUp(signUpDto: SignUpDto): Promise<void> {
     const emailVerificationToken = this.hashingService.generateRandomHash();
     const emailVerificationTokenExpiresAt = new Date(
-      new Date().getTime() + this.config.emailVerificationTokenTtl,
+      new Date().getTime() + this.authEnvConfig.emailVerificationTokenTtl,
     );
 
     const existingUser = await this.usersService.findUnique({
@@ -93,7 +96,7 @@ export class AuthService {
       subject: 'Verify Your Email Address',
       data: {
         userName: signUpDto.name || signUpDto.email,
-        verificationLink: `${this.config.emailVerificationUrl}?token=${emailVerificationToken}&email=${encodeURIComponent(
+        verificationLink: `${this.authEnvConfig.emailVerificationUrl}?token=${emailVerificationToken}&email=${encodeURIComponent(
           signUpDto.email,
         )}`,
       },
@@ -324,7 +327,7 @@ export class AuthService {
       // makes the cookie inaccessible to JavaScript on the client side
       httpOnly: true,
       // ensures the cookie is only sent over HTTPS in production
-      secure: this.config.env === EnvironmentModes.PRODUCTION,
+      secure: this.appEnvConfig.env === EnvironmentModes.PRODUCTION,
       expires: new Date(accessTokenExpirationTimestamp),
       // TODO: Consider if 'lax' is more appropriate based on app requirements
       sameSite: 'strict', // helps prevent CSRF attacks by not sending cookies on cross-site requests
@@ -334,7 +337,7 @@ export class AuthService {
       // makes the cookie inaccessible to JavaScript on the client side
       httpOnly: true,
       // ensures the cookie is only sent over HTTPS in production
-      secure: this.config.env === EnvironmentModes.PRODUCTION,
+      secure: this.appEnvConfig.env === EnvironmentModes.PRODUCTION,
       expires: new Date(refreshTokenExpirationTimestamp),
       // TODO: Consider if 'lax' is more appropriate based on app requirements
       sameSite: 'strict', // helps prevent CSRF attacks by not sending cookies on cross-site requests

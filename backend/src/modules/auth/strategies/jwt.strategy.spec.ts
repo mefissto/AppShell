@@ -7,7 +7,7 @@ describe('JwtStrategy', () => {
   let usersService: { findUnique: jest.Mock };
   let strategy: JwtStrategy;
 
-  const config = { secret: 'jwt-secret' };
+  const config = { jwtSecret: 'jwt-secret' };
 
   const payload: JwtPayload = {
     sub: 'user-1',

@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import type { Request, Response } from 'express';
 
 import appConfig from '@config/app.config';
+import authConfig from '@config/auth.config';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 import { LoggerService } from '@loggers/app/logger.service';
@@ -41,10 +42,10 @@ describe('AuthService', () => {
   let notificationsService: { sendEmailVerificationEmail: jest.Mock };
   let loggerService: { setContext: jest.Mock; warn: jest.Mock };
   let auditLoggerService: { log: jest.Mock };
-  let mockAppConfig: {
+  let mockAppConfig: { env: EnvironmentModes };
+  let mockAuthConfig: {
     emailVerificationTokenTtl: number;
     emailVerificationUrl: string;
-    env: EnvironmentModes;
   };
 
   const mockUser = () => ({
@@ -92,9 +93,11 @@ describe('AuthService', () => {
     loggerService = { setContext: jest.fn(), warn: jest.fn() };
     auditLoggerService = { log: jest.fn() };
     mockAppConfig = {
+      env: EnvironmentModes.TEST,
+    };
+    mockAuthConfig = {
       emailVerificationTokenTtl: 3600,
       emailVerificationUrl: 'http://example.com/verify',
-      env: EnvironmentModes.TEST,
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -108,6 +111,7 @@ describe('AuthService', () => {
         { provide: LoggerService, useValue: loggerService },
         { provide: AuditLoggerService, useValue: auditLoggerService },
         { provide: appConfig.KEY, useValue: mockAppConfig },
+        { provide: authConfig.KEY, useValue: mockAuthConfig },
       ],
     }).compile();
 

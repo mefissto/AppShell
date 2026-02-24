@@ -8,7 +8,7 @@ import { JwtTokenProvider } from './jwt-token.provider';
 describe('JwtTokenProvider', () => {
   let jwtService: { signAsync: jest.Mock; decode: jest.Mock };
   let provider: JwtTokenProvider;
-  let config: { refreshSecret: string; refreshTokenTtl: string };
+  let config: { jwtRefreshSecret: string; refreshTokenTtl: string };
 
   const payload: JwtPayload = {
     sub: 'user-1',
@@ -22,7 +22,7 @@ describe('JwtTokenProvider', () => {
       decode: jest.fn(),
     };
     config = {
-      refreshSecret: 'refresh-secret',
+      jwtRefreshSecret: 'refresh-secret',
       refreshTokenTtl: '1h',
     };
 
@@ -51,7 +51,7 @@ describe('JwtTokenProvider', () => {
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
       expect(jwtService.signAsync).toHaveBeenNthCalledWith(1, payload);
       expect(jwtService.signAsync).toHaveBeenNthCalledWith(2, payload, {
-        secret: config.refreshSecret,
+        secret: config.jwtRefreshSecret,
         expiresIn: config.refreshTokenTtl,
       });
     });
@@ -76,7 +76,7 @@ describe('JwtTokenProvider', () => {
 
       expect(token).toBe('refresh-token');
       expect(jwtService.signAsync).toHaveBeenCalledWith(payload, {
-        secret: config.refreshSecret,
+        secret: config.jwtRefreshSecret,
         expiresIn: config.refreshTokenTtl,
       });
     });

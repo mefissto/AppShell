@@ -4,16 +4,17 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import { EnvironmentModes } from '@interfaces/environment-variables';
 
 import appConfig from './app.config';
+import authConfig from './auth.config';
 import databaseConfig from './database.config';
-import envValidationSchema from './environment.validation';
-import jwtConfig from './jwt.config';
 import notificationsConfig from './notifications.config';
 import schedulerConfig from './scheduler.config';
+import securityConfig from './security.config';
+import envValidationSchema from './validation/environment.validation';
 
 /**
- * Load the environment file based on the NODE_ENV environment variable
+ * Load the environment file based on the APP_ENV environment variable
  */
-const env = process.env.NODE_ENV?.trim();
+const env = process.env.APP_ENV?.trim();
 const envFilePath = env ? `.env.${env}` : '.env';
 
 @Global()
@@ -22,17 +23,23 @@ const envFilePath = env ? `.env.${env}` : '.env';
     NestConfigModule.forRoot({
       isGlobal: true,
       envFilePath,
+      ignoreEnvFile: env === EnvironmentModes.PRODUCTION, // In production, we should rely on actual environment variables instead of .env file
       load: [
         appConfig,
         databaseConfig,
-        jwtConfig,
+        authConfig,
         notificationsConfig,
         schedulerConfig,
+        securityConfig,
       ],
       validate: (config) => {
         const { error, value, warning } = envValidationSchema.validate(config, {
-          allowUnknown: env !== EnvironmentModes.PRODUCTION,
-          abortEarly: true,
+          allowUnknown: false, // Disallow unknown keys to prevent typos and ensure all config is validated
+          abortEarly: false, // Return all errors instead of stopping at the first one to provide better feedback on all issues at once
+          // * Remove unknown keys to prevent them from being used in the app
+          // ? Instead of this, it may require to create a separate schema model and define all keys, and then take only those from env variables,
+          // ? it provides better safety and prevents typos in env variable names from causing issues
+          stripUnknown: true,
         });
 
         if (warning) {

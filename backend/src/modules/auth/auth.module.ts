@@ -3,7 +3,7 @@ import { ConfigType } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
-import jwtConfig from '@config/jwt.config';
+import authConfig from '@config/auth.config';
 import { AuthStrategy } from '@enums/auth-strategy.enum';
 import { AuditLoggerModule } from '@loggers/audit/audit-logger.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
@@ -25,15 +25,15 @@ import { LocalStrategy } from './strategies/local.strategy';
     AuditLoggerModule,
     PassportModule.register({ defaultStrategy: AuthStrategy.JWT }),
     JwtModule.registerAsync({
-      useFactory: (config: ConfigType<typeof jwtConfig>) => ({
-        secret: config.secret,
+      useFactory: (config: ConfigType<typeof authConfig>) => ({
+        secret: config.jwtSecret,
         signOptions: {
           expiresIn: config.accessTokenTtl,
           audience: config.audience,
           issuer: config.issuer,
         },
       }),
-      inject: [jwtConfig.KEY],
+      inject: [authConfig.KEY],
     }),
   ],
   controllers: [AuthController],

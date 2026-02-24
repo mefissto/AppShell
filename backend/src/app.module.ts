@@ -4,8 +4,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AlsModule } from '@common/async-local-storage/async-local-storage.module';
-import appConfig from '@config/app.config';
 import { ConfigModule } from '@config/config.module';
+import securityConfig from '@config/security.config';
 import { DatabaseModule } from '@database/database.module';
 import { JwtAuthGuard } from '@guards/jwt-auth.guard';
 import { RolesGuard } from '@guards/roles.guard';
@@ -24,7 +24,7 @@ import { HealthModule } from '@system/health/health.module';
   imports: [
     AlsModule, //* AsyncLocalStorage module should be imported before any modules that use it (e.g. Logger) to ensure the interceptor is applied globally
     ThrottlerModule.forRootAsync({
-      useFactory: (config: ConfigType<typeof appConfig>) => [
+      useFactory: (config: ConfigType<typeof securityConfig>) => [
         // TODO: Different throttling strategies per route?
         // https://docs.nestjs.com/security/rate-limiting
         // Think about using Redis or other storage for throttling in production
@@ -34,7 +34,7 @@ import { HealthModule } from '@system/health/health.module';
           limit: config.throttleLimit,
         },
       ],
-      inject: [appConfig.KEY],
+      inject: [securityConfig.KEY],
     }),
     ConfigModule,
     DatabaseModule,

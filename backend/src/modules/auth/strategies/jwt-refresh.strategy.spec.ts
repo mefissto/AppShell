@@ -10,7 +10,7 @@ describe('JwtRefreshStrategy', () => {
   let authService: { validateRefreshToken: jest.Mock };
   let strategy: JwtRefreshStrategy;
 
-  const config = { refreshSecret: 'refresh-secret' };
+  const config = { jwtRefreshSecret: 'refresh-secret' };
 
   const payload: JwtPayload = {
     sub: 'user-1',

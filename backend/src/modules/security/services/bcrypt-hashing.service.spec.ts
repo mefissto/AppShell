@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
-import appConfig from '@config/app.config';
+import securityConfig from '@config/security.config';
 
 import { BcryptHashingService } from './bcrypt-hashing.service';
 
@@ -19,17 +19,17 @@ jest.mock('crypto', () => ({
 
 describe('BcryptHashingService', () => {
   let service: BcryptHashingService;
-  let mockConfig: ConfigType<typeof appConfig>;
+  let mockConfig: ConfigType<typeof securityConfig>;
 
   beforeEach(async () => {
     mockConfig = {
       hashSaltRounds: 12,
-    } as ConfigType<typeof appConfig>;
+    } as ConfigType<typeof securityConfig>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BcryptHashingService,
-        { provide: appConfig.KEY, useValue: mockConfig },
+        { provide: securityConfig.KEY, useValue: mockConfig },
       ],
     }).compile();
 

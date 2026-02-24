@@ -4,7 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import jwtConfig from '@config/jwt.config';
+import authConfig from '@config/auth.config';
 import { AuthStrategy } from '@enums/auth-strategy.enum';
 import { CookieKeys } from '@enums/cookie-keys.enum';
 import { JwtPayload } from '@interfaces/jwt-payload';
@@ -14,8 +14,8 @@ import { UsersService } from '@modules/users/users.service';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, AuthStrategy.JWT) {
   constructor(
-    @Inject(jwtConfig.KEY)
-    private readonly config: ConfigType<typeof jwtConfig>,
+    @Inject(authConfig.KEY)
+    private readonly config: ConfigType<typeof authConfig>,
     private readonly usersService: UsersService,
   ) {
     super({
@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, AuthStrategy.JWT) {
         (request: Request) => request.cookies?.[CookieKeys.Authentication],
       ]),
       ignoreExpiration: false,
-      secretOrKey: config.secret,
+      secretOrKey: config.jwtSecret,
     });
   }
 

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { type ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
-import jwtConfig from '@config/jwt.config';
+import authConfig from '@config/auth.config';
 import { JwtPayload } from '@interfaces/jwt-payload';
 
 import { TokenPair } from '../interfaces/token-pair';
@@ -11,8 +11,8 @@ import { TokenPair } from '../interfaces/token-pair';
 export class JwtTokenProvider {
   constructor(
     private readonly jwtService: JwtService,
-    @Inject(jwtConfig.KEY)
-    private readonly config: ConfigType<typeof jwtConfig>,
+    @Inject(authConfig.KEY)
+    private readonly config: ConfigType<typeof authConfig>,
   ) {}
 
   async generateTokenPair(payload: JwtPayload): Promise<TokenPair> {
@@ -31,7 +31,7 @@ export class JwtTokenProvider {
 
   async generateRefreshToken(payload: JwtPayload): Promise<string> {
     return this.jwtService.signAsync(payload, {
-      secret: this.config.refreshSecret,
+      secret: this.config.jwtRefreshSecret,
       expiresIn: this.config.refreshTokenTtl,
     });
   }

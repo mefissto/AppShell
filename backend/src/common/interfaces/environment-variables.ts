@@ -26,9 +26,10 @@ export type EnvironmentType =
 export const enum EnvironmentVariableKeys {
   APP = 'app',
   DATABASE = 'database',
-  JWT = 'jwt',
+  AUTH = 'auth',
   NOTIFICATIONS = 'notifications',
   SCHEDULER = 'scheduler',
+  SECURITY = 'security',
 }
 
 /**
@@ -40,14 +41,15 @@ export interface AppEnvConfig {
   port: number;
   apiVersion: string;
   env: string;
+  logLevel: LogLevel;
+  healthCheckDiskThresholdPercent: number;
+  healthCheckDiskPath: string;
+}
+
+export interface SecurityEnvConfig {
   hashSaltRounds: number;
   throttleTtl: number;
   throttleLimit: number;
-  logLevel: LogLevel;
-  emailVerificationTokenTtl: number;
-  emailVerificationUrl: string;
-  healthCheckDiskThresholdPercent: number;
-  healthCheckDiskPath: string;
 }
 
 /**
@@ -58,15 +60,17 @@ export interface DatabaseEnvConfig {
 }
 
 /**
- * JWT environment configuration interface
+ * Auth environment configuration interface
  */
-export interface JwtEnvConfig {
-  secret: string;
-  refreshSecret: string;
+export interface AuthEnvConfig {
+  jwtSecret: string;
+  jwtRefreshSecret: string;
   audience: string;
   issuer: string;
   accessTokenTtl: number | StringValue;
   refreshTokenTtl: number | StringValue;
+  emailVerificationTokenTtl: number;
+  emailVerificationUrl: string;
 }
 
 /**

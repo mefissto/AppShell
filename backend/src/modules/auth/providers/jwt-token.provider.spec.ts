@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 
-import { JwtEnvConfig } from '@interfaces/environment-variables';
+import { AuthEnvConfig } from '@interfaces/environment-variables';
 import { JwtPayload } from '@interfaces/jwt-payload';
 
 import { JwtTokenProvider } from './jwt-token.provider';
@@ -28,7 +28,7 @@ describe('JwtTokenProvider', () => {
 
     provider = new JwtTokenProvider(
       jwtService as unknown as JwtService,
-      config as unknown as JwtEnvConfig,
+      config as unknown as AuthEnvConfig,
     );
   });
 

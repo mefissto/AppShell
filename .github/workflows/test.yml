@@ -30,7 +30,10 @@ jobs:
       - run: npm run prisma:generate
         name: Generate Prisma client
 
-      - run: cd generated/prisma && ls && npm run test
+      - run: ls generated/prisma
+        name: List generated prisma files
+
+      - run: npm run test
         name: Run tests
 
       - run: npm run build

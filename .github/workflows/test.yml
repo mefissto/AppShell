@@ -22,7 +22,7 @@ jobs:
 
       - run: echo "$PWD"
       
-      - run: npm ci
+      - run: ls && npm ci
         name: Install dependencies
 
       - run: npm run test

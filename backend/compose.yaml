@@ -154,6 +154,7 @@ services:
   # - Profiles let you opt into this service only when needed.
   # How to use:
   # - `docker compose --profile ops run --rm migrations-manual`
+  # - This will run the migrations (by profile name: "ops") in a one-off container and then remove(--rm) it after completion.
   # - This does NOT change the default startup path (`migrations` still runs automatically).
   migrations-manual:
     <<: *service-defaults
@@ -176,6 +177,34 @@ services:
     mem_limit: 512m
     restart: "no"
 
+  # The db-seed service runs Prisma seed scripts to populate the database with initial or test data. 
+  # It uses the same image as backend since it has the necessary code and dependencies. 
+  # This service is also profile-based, allowing you to run it on demand without affecting the default startup flow. 
+  # It depends on the database being healthy before it runs, and it will not restart automatically if it fails, 
+  # ensuring that you can see and address any errors that occur during seeding.
+  #
+  # To run the seeding service, use the command:
+  # `docker compose --profile seed run --rm db-seed`
+  db-seed:
+    <<: *service-defaults
+    profiles: ["seed"]
+    
+    image: AppShell/backend:latest # Use the same image as backend since it has the code and dependencies needed for seeding.
+    command: ["npm", "run", "prisma:seed"] # Override default command to run seeding script instead of backend.
+    
+    depends_on:
+      database:
+        condition: service_healthy
+        restart: false # Don't restart seeding if it fails, to avoid infinite loops. We want to see the error and fix it.
+
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      APP_ENV: ${APP_ENV} # Ensure APP_ENV is set for the seed script to validate environment.
+
+    cpus: "0.5"
+    mem_limit: 512m
+
+    restart: "no" # Don't restart seeding automatically, to avoid infinite loops on failure. We want to see the error and fix it.
 
 volumes:
   db_data:

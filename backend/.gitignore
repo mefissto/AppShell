@@ -72,11 +72,6 @@ docker-data/
 ehthumbs.db
 Desktop.ini
 
-# Optional lockfiles (keep one per your workflow)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
 # Misc
 *.tgz
 *.patch

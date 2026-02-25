@@ -1,0 +1,22 @@
+name: AppShell CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    container:
+      image: node:22
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run test
+      - run: npm run build

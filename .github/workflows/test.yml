@@ -19,8 +19,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          node-version: 22
+
       - run: npm ci
+        name: Install dependencies
+
       - run: npm run test
+        name: Run tests
+
       - run: npm run build
+        name: Build project

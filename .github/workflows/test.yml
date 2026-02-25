@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:22
+    
+    defaults:
+      run:
+        working-directory: ./backend
 
     steps:
       - uses: actions/checkout@v4

@@ -20,10 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: echo "$PWD"
-      
-      - run: ls && npm ci
+      - run: npm ci
         name: Install dependencies
+
+      - run: npm run prisma:generate
+        name: Generate Prisma client
 
       - run: npm run test
         name: Run tests

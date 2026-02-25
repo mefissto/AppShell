@@ -96,7 +96,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -104,27 +104,25 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@constants/(.*)$": "<rootDir>/common/constants/$1",
-      "^@enums/(.*)$": "<rootDir>/common/enums/$1",
-      "^@interfaces/(.*)$": "<rootDir>/common/interfaces/$1",
-      "^@entities/(.*)$": "<rootDir>/common/entities/$1",
-      "^@filters/(.*)$": "<rootDir>/common/filters/$1",
-      "^@utils/(.*)$": "<rootDir>/common/utils/$1",
-      "^@decorators/(.*)$": "<rootDir>/common/decorators/$1",
-      "^@guards/(.*)$": "<rootDir>/common/guards/$1",
-      "^@pagination/(.*)$": "<rootDir>/common/pagination/$1",
-      "^@config/(.*)$": "<rootDir>/config/$1",
-      "^@generated/prisma$": "<rootDir>/../generated/prisma",
-      "^@generated/prisma/(.*)$": "<rootDir>/../generated/prisma/$1",
-      "^@generated/(.*)$": "<rootDir>/../generated/$1",
-      "^@database/(.*)$": "<rootDir>/database/$1",
-      "^@modules/(.*)$": "<rootDir>/modules/$1",
-      "^@system/(.*)$": "<rootDir>/system/$1",
-      "^@common/(.*)$": "<rootDir>/common/$1",
-      "^@loggers/(.*)$": "<rootDir>/common/loggers/$1",
+      "^@constants/(.*)$": "<rootDir>/src/common/constants/$1",
+      "^@enums/(.*)$": "<rootDir>/src/common/enums/$1",
+      "^@interfaces/(.*)$": "<rootDir>/src/common/interfaces/$1",
+      "^@entities/(.*)$": "<rootDir>/src/common/entities/$1",
+      "^@filters/(.*)$": "<rootDir>/src/common/filters/$1",
+      "^@utils/(.*)$": "<rootDir>/src/common/utils/$1",
+      "^@decorators/(.*)$": "<rootDir>/src/common/decorators/$1",
+      "^@guards/(.*)$": "<rootDir>/src/common/guards/$1",
+      "^@pagination/(.*)$": "<rootDir>/src/common/pagination/$1",
+      "^@config/(.*)$": "<rootDir>/src/config/$1",
+      "^@generated/(.*)$": "<rootDir>/generated/$1",
+      "^@database/(.*)$": "<rootDir>/src/database/$1",
+      "^@modules/(.*)$": "<rootDir>/src/modules/$1",
+      "^@system/(.*)$": "<rootDir>/src/system/$1",
+      "^@common/(.*)$": "<rootDir>/src/common/$1",
+      "^@loggers/(.*)$": "<rootDir>/src/common/loggers/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     }
   }

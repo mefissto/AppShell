@@ -117,6 +117,8 @@
       "^@guards/(.*)$": "<rootDir>/common/guards/$1",
       "^@pagination/(.*)$": "<rootDir>/common/pagination/$1",
       "^@config/(.*)$": "<rootDir>/config/$1",
+      "^@generated/prisma$": "<rootDir>/../generated/prisma/index.ts",
+      "^@generated/prisma/(.*)$": "<rootDir>/../generated/prisma/$1",
       "^@generated/(.*)$": "<rootDir>/../generated/$1",
       "^@database/(.*)$": "<rootDir>/database/$1",
       "^@modules/(.*)$": "<rootDir>/modules/$1",

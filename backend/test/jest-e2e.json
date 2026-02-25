@@ -18,6 +18,8 @@
     "^@guards/(.*)$": "<rootDir>/src/common/guards/$1",
     "^@pagination/(.*)$": "<rootDir>/src/common/pagination/$1",
     "^@config/(.*)$": "<rootDir>/src/config/$1",
+    "^@generated/prisma$": "<rootDir>/generated/prisma/index.ts",
+    "^@generated/prisma/(.*)$": "<rootDir>/generated/prisma/$1",
     "^@generated/(.*)$": "<rootDir>/generated/$1",
     "^@database/(.*)$": "<rootDir>/src/database/$1",
     "^@modules/(.*)$": "<rootDir>/src/modules/$1",

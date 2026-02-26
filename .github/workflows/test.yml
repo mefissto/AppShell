@@ -30,7 +30,7 @@ jobs:
       - run: npm run prisma:generate
         name: Generate Prisma client
 
-      - run: cat package.json
+      - run: cat ./generated/prisma/package.json
 
       - run: ls generated/prisma
         name: List generated prisma files

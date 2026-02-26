@@ -33,7 +33,6 @@ export class TasksService {
     userId: string,
   ): Promise<EntityListResponseDto<TaskEntity>> {
     // Build the query using the builder
-    console.log(taskListRequestDto);
     const query = new EntityListRequestBuilder(taskListRequestDto)
       .addFilter((filter) => {
         const where: Record<string, unknown> = {

@@ -1,6 +1,10 @@
 const prismaClientConnectMock = jest.fn();
 const prismaClientExtendsMock = jest.fn().mockReturnThis();
 const prismaClientConstructorMock = jest.fn();
+const prismaDefineExtensionMock = jest
+  .fn()
+  .mockImplementation((extension) => extension);
+const prismaGetExtensionContextMock = jest.fn();
 
 jest.mock('@prisma/adapter-pg', () => ({
   PrismaPg: jest.fn().mockImplementation((options) => ({
@@ -8,19 +12,52 @@ jest.mock('@prisma/adapter-pg', () => ({
   })),
 }));
 
-jest.mock('@generated/prisma', () => ({
-  PrismaClient: class {
+function createPrismaClientModuleMock() {
+  class PrismaClient {
     constructor(options?: unknown) {
       prismaClientConstructorMock(options);
     }
     $connect = prismaClientConnectMock;
     $extends = prismaClientExtendsMock;
-  },
-}));
+  }
 
-import { PrismaPg } from '@prisma/adapter-pg';
+  return {
+    __esModule: true,
+    PrismaClient,
+    default: {
+      PrismaClient,
+    },
+  };
+}
 
-import { PrismaService, prismaServiceFactory } from './prisma.service';
+jest.mock('@generated/prisma', createPrismaClientModuleMock);
+jest.mock('@generated/prisma/index', createPrismaClientModuleMock);
+jest.mock('../../generated/prisma', createPrismaClientModuleMock);
+jest.mock('../../generated/prisma/index', createPrismaClientModuleMock);
+
+function createPrismaClientNamespaceMock() {
+  class PrismaClient {
+    constructor(options?: unknown) {
+      prismaClientConstructorMock(options);
+    }
+    $connect = prismaClientConnectMock;
+    $extends = prismaClientExtendsMock;
+  }
+
+  return {
+    Prisma: {
+      defineExtension: prismaDefineExtensionMock,
+      getExtensionContext: prismaGetExtensionContextMock,
+    },
+    PrismaClient,
+  };
+}
+
+jest.mock('@generated/prisma/client', createPrismaClientNamespaceMock);
+jest.mock('../../generated/prisma/client', createPrismaClientNamespaceMock);
+
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { PrismaService, prismaServiceFactory } = require('./prisma.service');
 
 describe('PrismaService', () => {
   afterEach(() => {

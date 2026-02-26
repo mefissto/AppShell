@@ -36,7 +36,6 @@ export class ProfileController {
     @CurrentUser() currentUser: UserEntity,
     @Req() req: Request,
   ): Promise<ProfileEntity> {
-    console.log('Request:', req); // Debug log for headers
     return this.profileService.getByUserId(currentUser.id);
   }
 

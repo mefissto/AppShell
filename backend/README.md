@@ -85,9 +85,9 @@ prisma/
 
 ### Docker development
 
-The backend image generates its own Prisma client during the build. Generated
-files from the host are excluded from both the build context and Compose Watch
-so they cannot replace the container's generated package entry point.
+The backend image generates its own Prisma client after copying the build context.
+Host-generated files are excluded from Compose Watch so they cannot replace the
+container's generated package entry point during watch synchronization.
 
 After pulling changes to the Dockerfile or Prisma generation helper, rebuild and
 recreate the backend from this directory:

@@ -6,7 +6,7 @@
 
 # Pin Node + Alpine image by digest for repeatable builds.
 # Why: same base image bits across machines and over time.
-FROM node:lts-alpine3.22@sha256:d28696cabe6a72c5addbb608b344818e5a158d849174abd4b1ae85ab48536280
+FROM node:24.22.0-alpine3.24@sha256:429bdfbc204b4eabc6438e6d34e4e9d8dd2ca1df8289bcd78cdd3c5db387b7a5
 
 # Set default working directory for all subsequent commands.
 # Why: keeps file operations predictable and avoids repeating absolute paths.

@@ -14,7 +14,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "ignoreDeprecations": "6.0", // !TODO: Remove this during migration to NestJS v12 and TS 7.0.
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

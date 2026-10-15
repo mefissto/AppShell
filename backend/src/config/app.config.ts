@@ -1,5 +1,6 @@
 import { LogLevel } from '@nestjs/common';
 import { registerAs } from '@nestjs/config';
+import { resolve } from 'node:path';
 
 import {
   AppEnvConfig,
@@ -26,6 +27,6 @@ export default registerAs(
     healthCheckDiskThresholdPercent: parseFloat(
       process.env.HEALTH_CHECK_DISK_THRESHOLD_PERCENT as string,
     ),
-    healthCheckDiskPath: process.env.HEALTH_CHECK_DISK_PATH as string,
+    healthCheckDiskPath: resolve(process.env.HEALTH_CHECK_DISK_PATH || '/'),
   }),
 );

@@ -83,6 +83,24 @@ prisma/
 
 ## Getting Started
 
+### Docker development
+
+The backend image generates its own Prisma client after copying the build context.
+Host-generated files are excluded from Compose Watch so they cannot replace the
+container's generated package entry point during watch synchronization.
+
+After pulling changes to the Dockerfile or Prisma generation helper, rebuild and
+recreate the backend from this directory:
+
+```bash
+docker compose up --build --force-recreate --no-deps backend
+```
+
+This assumes the database is already running and its migrations have completed.
+For the normal full-stack startup, use `docker compose up --build --wait`.
+After changing the Prisma schema, rebuild the backend image as well; source-only
+watch synchronization does not regenerate the client.
+
 ### Prerequisites
 
 - Node.js (v18+)

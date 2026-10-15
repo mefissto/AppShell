@@ -31,6 +31,10 @@ RUN apk add --no-cache curl
 # Why: app source is needed for `start:dev` and TypeScript watch mode.
 COPY . .
 
+# Generate inside the image, including the extensionless package entry point.
+# Prisma loads its config during generation, but does not connect to this URL.
+RUN DATABASE_URL=postgresql://generate:generate@localhost:5432/generate npm run prisma:generate
+
 # Default app port inside container.
 # Why: documents intended internal port and supports tooling that reads `PORT`.
 ENV PORT=3000

@@ -46,7 +46,7 @@ services:
       context: .
       dockerfile: Dockerfile
       tags: 
-        - AppShell/backend:latest
+        - appshell/backend:latest
     
     ports:
       - "${APP_PORT:-3000}:${APP_PORT:-3000}"
@@ -56,6 +56,11 @@ services:
         - action: sync
           path: .
           target: /app
+          ignore:
+            - generated/
+            - node_modules/
+            - dist/
+            - .npm-audit-cache/
     
     depends_on:
       database: 
@@ -132,7 +137,7 @@ services:
       context: .
       dockerfile: Dockerfile.migrations
       tags: 
-        - AppShell/migrations:latest
+        - appshell/migrations:latest
     
     depends_on:
       database:
@@ -164,7 +169,7 @@ services:
       context: .
       dockerfile: Dockerfile.migrations
       tags:
-        - AppShell/migrations:latest
+        - appshell/migrations:latest
 
     depends_on:
       database:
@@ -189,7 +194,7 @@ services:
     <<: *service-defaults
     profiles: ["seed"]
     
-    image: AppShell/backend:latest # Use the same image as backend since it has the code and dependencies needed for seeding.
+    image: appshell/backend:latest # Use the same image as backend since it has the code and dependencies needed for seeding.
     command: ["npm", "run", "prisma:seed"] # Override default command to run seeding script instead of backend.
     
     depends_on:

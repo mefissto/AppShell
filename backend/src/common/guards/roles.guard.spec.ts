@@ -1,7 +1,7 @@
 import {
-    NotFoundException,
-    type ExecutionContext,
-    type Type,
+  NotFoundException,
+  type ExecutionContext,
+  type Type,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
@@ -16,7 +16,7 @@ describe('RolesGuard', () => {
   const createContext = (role?: UserRoles): ExecutionContext =>
     ({
       getHandler: jest.fn(),
-      getClass: jest.fn(() => class TestController {} as Type<unknown>),
+      getClass: jest.fn(() => class TestController {}),
       switchToHttp: jest.fn(() => ({
         getRequest: jest.fn(() => ({ user: { role } })),
       })),

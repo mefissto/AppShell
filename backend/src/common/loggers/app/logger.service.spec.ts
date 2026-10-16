@@ -15,7 +15,7 @@ describe('LoggerService', () => {
     const mockConfig: ConfigType<typeof appConfig> = {
       env: EnvironmentModes.TEST,
       name: 'AppShell',
-      logLevel: 'log' as LogLevel,
+      logLevel: 'log',
     } as ConfigType<typeof appConfig>;
 
     const module: TestingModule = await Test.createTestingModule({

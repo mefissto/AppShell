@@ -16,8 +16,8 @@ This is a production-ready NestJS backend that provides:
 
 ## Tech Stack
 
-- **Framework**: [NestJS](https://nestjs.com/) 11.x
-- **Language**: TypeScript 5.7.x
+- **Framework**: [NestJS](https://nestjs.com/) 12.x
+- **Language**: TypeScript 6.0.x
 - **Database**: PostgreSQL with [Prisma](https://www.prisma.io/)
 - **Authentication**: JWT + Passport.js
 - **Validation**: class-validator, class-transformer

@@ -1,8 +1,4 @@
-import {
-    ArgumentsHost,
-    CallHandler,
-    ExecutionContext
-} from '@nestjs/common';
+import { ArgumentsHost, CallHandler, ExecutionContext } from '@nestjs/common';
 import { of } from 'rxjs';
 
 import { AsyncLocalStorageInterceptor } from './async-local-storage.interceptor';
@@ -17,7 +13,7 @@ describe('AsyncLocalStorageInterceptor', () => {
     ({
       switchToHttp: jest.fn().mockReturnValue({
         getRequest: jest.fn().mockReturnValue(request),
-      } as unknown as ArgumentsHost),
+      }),
     }) as unknown as ExecutionContext;
 
   beforeEach(() => {

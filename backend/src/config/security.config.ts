@@ -1,8 +1,8 @@
 import { registerAs } from '@nestjs/config';
 
 import {
-    EnvironmentVariableKeys,
-    SecurityEnvConfig,
+  EnvironmentVariableKeys,
+  SecurityEnvConfig,
 } from '@interfaces/environment-variables';
 
 /**

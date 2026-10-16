@@ -1,5 +1,10 @@
 ## Replace resend emails with AWS SES
 
+## Final migration verification follow-ups (16 October 2026)
+
+- [ ] Triage the non-mutating ESLint report: 218 errors and 7 warnings across src/test, with no fatal/parser errors. Separate formatting and existing unsafe typing from any new rule regressions; do not disable rules globally just to mark lint green.
+- [ ] If running the whole unit suite inside Docker, provide a dedicated test container with sufficient heap. The suite exhausted the development service's default heap under its 1 GB limit; all 319 tests passed with a 3 GB test-container limit and NODE_OPTIONS=--max-old-space-size=2048. The application itself passed under the existing development limit.
+
 ## Deferred work from the migration review
 
 Moved here on 16 October 2026. These are existing application defects, maintenance opportunities, and deployment improvements, not prerequisites for the NestJS 12 / TypeScript 6 migration. Review and schedule them independently. The detailed examples are design guidance, not implemented changes. Priorities and observations reflect the original review; recheck the current code before implementing.

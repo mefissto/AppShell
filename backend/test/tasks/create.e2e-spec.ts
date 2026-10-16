@@ -27,7 +27,8 @@ describe('POST /tasks (e2e)', () => {
   });
 
   beforeEach(async () => {
-    throttlerStorage.storage.clear();
+    // Reset hit history and timers as well as visible storage between tests.
+    throttlerStorage.onApplicationShutdown();
 
     cleanupRegistry = new helpers.CleanupRegistry();
     ownerUser = helpers.createTestUserInput('tasks-create-owner');

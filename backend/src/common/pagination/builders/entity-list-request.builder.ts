@@ -28,7 +28,7 @@ export class EntityListRequestBuilder<TFilter = unknown, TSort = unknown> {
     if (this.listRequestDto.filter) {
       this.entityQuery.where = transformFilter
         ? transformFilter(this.listRequestDto.filter)
-        : (this.listRequestDto.filter as Record<string, unknown>);
+        : this.listRequestDto.filter;
     }
     return this;
   }

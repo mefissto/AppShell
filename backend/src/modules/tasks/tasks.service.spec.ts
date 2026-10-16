@@ -74,7 +74,7 @@ describe('TasksService', () => {
     loggerService = { warn: jest.fn() };
 
     prisma.$transaction.mockImplementation(async (callback) =>
-      callback(prisma as never),
+      callback(prisma),
     );
 
     const module: TestingModule = await Test.createTestingModule({

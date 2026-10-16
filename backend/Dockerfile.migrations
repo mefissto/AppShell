@@ -16,13 +16,13 @@ WORKDIR /app
 # Step-by-step:
 # - `npm init -y`: generates package.json quickly in this minimal image context.
 # - `npm pkg set private=true`: avoids accidental publishing semantics.
-# - `npm pkg set dependencies.prisma=7.4.0`: install Prisma CLI at known version.
+# - `npm pkg set dependencies.prisma=7.10.1`: match the application's Prisma CLI.
 # - `npm pkg set dependencies.dotenv=17.2.3`: allows `import "dotenv/config"` in prisma.config.ts.
 # - `npm install --omit=dev`: install only production dependencies for smaller image.
 # - `npm cache clean --force`: remove cache to reduce image size.
 RUN npm init -y \
     && npm pkg set private=true \
-    && npm pkg set dependencies.prisma=7.4.0 \
+    && npm pkg set dependencies.prisma=7.10.1 \
     && npm pkg set dependencies.dotenv=17.2.3 \
     && npm install --omit=dev \
     && npm cache clean --force

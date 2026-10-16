@@ -3,7 +3,7 @@ import { type ConfigType } from '@nestjs/config';
 import {
   DiskHealthIndicator,
   HealthCheckService,
-  PrismaHealthIndicator
+  PrismaHealthIndicator,
 } from '@nestjs/terminus';
 
 import appConfig from '@config/app.config';

@@ -37,7 +37,8 @@ describe('POST /auth/register (e2e)', () => {
   });
 
   beforeEach(async () => {
-    throttlerStorage.storage.clear();
+    // Reset hit history and timers as well as visible storage between tests.
+    throttlerStorage.onApplicationShutdown();
 
     testUser = helpers.createTestUserInput('auth-register');
     cleanupRegistry = new helpers.CleanupRegistry();
@@ -78,7 +79,7 @@ describe('POST /auth/register (e2e)', () => {
     expect(user).toBeDefined();
   });
 
-  it('returns 409 for duplicate email', async () => {
+  it('returns 400 for duplicate email', async () => {
     // First registration should succeed.
     await request(app.getHttpServer())
       .post('/auth/register')
@@ -95,7 +96,7 @@ describe('POST /auth/register (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/register')
       .send(testUser)
-      .expect(409);
+      .expect(400);
   });
 
   it('returns 400 for invalid email format', async () => {

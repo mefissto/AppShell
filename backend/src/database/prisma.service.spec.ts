@@ -65,7 +65,7 @@ describe('PrismaService', () => {
   });
 
   it('should instantiate prisma service', () => {
-    const service = new PrismaService({} as never);
+    const service = new PrismaService({});
 
     expect(service).toBeDefined();
     expect(prismaClientConstructorMock).toHaveBeenCalledWith({} as never);
@@ -78,7 +78,7 @@ describe('prismaServiceFactory', () => {
   });
 
   it('should create a Prisma client with extensions', () => {
-    const prisma = prismaServiceFactory({ url: 'postgres://test' } as never);
+    const prisma = prismaServiceFactory({ url: 'postgres://test' });
 
     expect(PrismaPg).toHaveBeenCalledWith({
       connectionString: 'postgres://test',

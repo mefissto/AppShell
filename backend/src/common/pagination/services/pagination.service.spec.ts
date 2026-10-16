@@ -31,7 +31,10 @@ describe('PaginationService', () => {
 
   it('should build custom pagination response', () => {
     const request = new EntityListRequestDto();
-    request.pagination = { page: 2, limit: 5 } as EntityListRequestDto['pagination'];
+    request.pagination = {
+      page: 2,
+      limit: 5,
+    };
 
     const result = service.buildResponse(['a', 'b'], 12, request);
 

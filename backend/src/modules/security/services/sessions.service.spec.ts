@@ -89,7 +89,9 @@ describe('SessionsService', () => {
 
   describe('update', () => {
     it('should update a session entity', async () => {
-      prisma.session.findUniqueOrThrow.mockResolvedValueOnce({ id: 'session-1' });
+      prisma.session.findUniqueOrThrow.mockResolvedValueOnce({
+        id: 'session-1',
+      });
       prisma.session.update.mockResolvedValueOnce({ id: 'session-1' });
 
       const result = await service.update('session-1', {

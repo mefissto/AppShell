@@ -1,7 +1,7 @@
 import {
-    registerDecorator,
-    ValidationArguments,
-    ValidationOptions,
+  registerDecorator,
+  ValidationArguments,
+  ValidationOptions,
 } from 'class-validator';
 
 const DEFAULT_FORBIDDEN_KEYS = [

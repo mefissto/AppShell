@@ -1,6 +1,6 @@
 import {
-    EnvironmentVariableKeys,
-    NotificationsEnvConfig,
+  EnvironmentVariableKeys,
+  NotificationsEnvConfig,
 } from '@interfaces/environment-variables';
 import { registerAs } from '@nestjs/config';
 

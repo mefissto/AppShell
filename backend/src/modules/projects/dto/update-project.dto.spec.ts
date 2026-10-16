@@ -57,5 +57,4 @@ describe('UpdateProjectDto', () => {
 
     expect(descriptionError).toBeDefined();
   });
-
 });

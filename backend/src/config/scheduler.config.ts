@@ -1,8 +1,8 @@
 import { registerAs } from '@nestjs/config';
 
 import {
-    EnvironmentVariableKeys,
-    SchedulerEnvConfig,
+  EnvironmentVariableKeys,
+  SchedulerEnvConfig,
 } from '@interfaces/environment-variables';
 
 export default registerAs(

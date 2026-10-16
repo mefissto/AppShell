@@ -78,10 +78,10 @@ export const excludeSoftDeleted = Prisma.defineExtension({
       async findFirst<M, A>({
         args,
         query,
-      }): Promise<Prisma.Result<M, A, 'findFirst'>> {
+      }: any): Promise<Prisma.Result<M, A, 'findFirst'>> {
         args.where = { ...args.where, deletedAt: null };
 
-        return query(args).then((record) => {
+        return query(args).then((record: any) => {
           if (record) {
             const { deletedAt, ...rest } = record;
             return rest;
@@ -94,10 +94,10 @@ export const excludeSoftDeleted = Prisma.defineExtension({
       async findUnique<M, A>({
         args,
         query,
-      }): Promise<Prisma.Result<M, A, 'findUnique'>> {
+      }: any): Promise<Prisma.Result<M, A, 'findUnique'>> {
         args.where = { ...args.where, deletedAt: null };
 
-        return query(args).then((record) => {
+        return query(args).then((record: any) => {
           if (record) {
             const { deletedAt, ...rest } = record;
             return rest;
@@ -110,7 +110,7 @@ export const excludeSoftDeleted = Prisma.defineExtension({
       async findMany<M, A>({
         args,
         query,
-      }): Promise<Prisma.Result<M, A, 'findMany'>> {
+      }: any): Promise<Prisma.Result<M, A, 'findMany'>> {
         const queryArgs = {
           ...args,
           where: { ...args.where, deletedAt: null },
@@ -119,7 +119,7 @@ export const excludeSoftDeleted = Prisma.defineExtension({
         const records = await query(queryArgs);
 
         // Remove deletedAt from the returned records
-        return records.map(({ deletedAt, ...rest }) => rest);
+        return records.map(({ deletedAt, ...rest }: any) => rest);
       },
     },
   },

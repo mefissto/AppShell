@@ -16,8 +16,8 @@ This is a production-ready NestJS backend that provides:
 
 ## Tech Stack
 
-- **Framework**: [NestJS](https://nestjs.com/) 11.x
-- **Language**: TypeScript 5.7.x
+- **Framework**: [NestJS](https://nestjs.com/) 12.x
+- **Language**: TypeScript 6.0.x
 - **Database**: PostgreSQL with [Prisma](https://www.prisma.io/)
 - **Authentication**: JWT + Passport.js
 - **Validation**: class-validator, class-transformer
@@ -103,15 +103,21 @@ watch synchronization does not regenerate the client.
 
 ### Prerequisites
 
-- Node.js (v18+)
-- npm or yarn
+- Node.js **24.22.0**, matching CI and the Docker images. The supported range is
+  `>=24.15.0 <25`; `backend/.nvmrc` records the preferred version.
+- npm **>=11.14.1 <12**. Use npm and the committed `package-lock.json` for this project.
 - PostgreSQL database
+
+From `backend`, run `nvm install` and `nvm use` if your version manager supports
+`.nvmrc`. With nvm-windows, use `nvm install 24.22.0` followed by
+`nvm use 24.22.0` explicitly. Check `node --version` and `npm --version` afterward.
+In Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
 
 ### Installation
 
-1. Install dependencies:
+1. Install the exact locked dependencies from the `backend` directory:
 ```bash
-npm install
+npm ci
 ```
 
 2. Configure environment variables by creating a `.env` file:

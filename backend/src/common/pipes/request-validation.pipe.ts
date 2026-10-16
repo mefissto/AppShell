@@ -1,8 +1,8 @@
 import {
-    ArgumentMetadata,
-    Injectable,
-    PipeTransform,
-    ValidationPipe,
+  ArgumentMetadata,
+  Injectable,
+  PipeTransform,
+  ValidationPipe,
 } from '@nestjs/common';
 
 import { VALIDATION_PIPE_CONFIG } from '@config/validation-pipe.config';

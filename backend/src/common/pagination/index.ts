@@ -13,4 +13,3 @@ export { EntitySortDto, SortDirection } from './interfaces/entity-sort.dto';
 
 // Services
 export { PaginationService } from './services/pagination.service';
-

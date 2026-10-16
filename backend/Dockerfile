@@ -1,5 +1,5 @@
 # =========================
-# Backend Dockerfile (explained)
+# Backend Dockerfile
 # =========================
 # This image is for local development with NestJS watch mode.
 # It favors reproducibility (`npm ci`) and container health visibility (`curl` for healthcheck).

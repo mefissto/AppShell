@@ -1,5 +1,5 @@
 # ======================================
-# Migrations Dockerfile (explained)
+# Migrations Dockerfile
 # ======================================
 # This image is intentionally minimal and focused only on running Prisma migrations.
 # It does NOT include full backend dependencies.

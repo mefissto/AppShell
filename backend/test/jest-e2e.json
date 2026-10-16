@@ -5,7 +5,12 @@
   "setupFiles": ["reflect-metadata"],
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": "<rootDir>/tsconfig.spec.json"
+      }
+    ]
   },
   "moduleNameMapper": {
     "^@constants/(.*)$": "<rootDir>/src/common/constants/$1",

@@ -1,0 +1,41 @@
+// ===================
+// User 
+// ===================
+model User {
+    id                              String         @id @default(cuid())
+    email                           String         @unique
+    password                        String
+    name                            String? // TODO: Remove this field in favor of UserProfile's firstName and lastName
+    createdAt                       DateTime       @default(now())
+    updatedAt                       DateTime       @updatedAt
+    emailVerified                   Boolean        @default(false)
+    emailVerificationToken          String?        @unique
+    emailVerificationTokenExpiresAt DateTime?
+    // Relations
+    sessions                        Session[]
+    tasks                           Task[]
+    projects                        Project[]
+    userSettings                    UserSettings?
+    userProfile                     UserProfile?
+    tags                            Tag[]
+    notifications                   Notification[]
+}
+
+// ===================
+// User Profile
+// ===================
+model UserProfile {
+    id          String   @id @default(cuid())
+    firstName   String?
+    lastName    String?
+    displayName String?
+    timezone    String   @default("UTC")
+    language    String   @default("en")
+    avatarUrl   String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    metadata    Json?
+    // Required relationship to User
+    userId      String   @unique
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

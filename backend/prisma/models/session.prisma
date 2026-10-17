@@ -1,0 +1,20 @@
+// ===================
+// Session
+// ===================
+model Session {
+    id           String    @id @default(cuid())
+    refreshToken String?   @unique
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+    expiresAt    DateTime?
+    revokedAt    DateTime?
+    ipAddress    String?
+    userAgent    String?
+    deviceName   String?
+
+    // Required relationship to User
+    userId String // Foreign key to User model
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([id, userId])
+}

@@ -1,0 +1,68 @@
+// ===================
+// Task
+// ===================
+model Task {
+  id             String             @id @default(cuid())
+  title          String
+  description    String?
+  status         TaskStatus         @default(PENDING)
+  priority       TaskPriority       @default(MEDIUM)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+  dueDate        DateTime?
+  metadata       Json?
+  remindAt       DateTime?
+  reminderStatus TaskReminderStatus @default(CANCELED)
+  // Required relationship to User
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  // Optional relationship to Project
+  projectId      String?
+  project        Project?           @relation(fields: [projectId], references: [id])
+  // Many-to-many relationship with Tag through TaskTag
+  tags           TaskTag[]
+  reminders      TaskReminder[]
+
+  @@index([id, userId])
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  OVERDUE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ===================
+// Task Reminder
+// ===================
+model TaskReminder {
+  id             String             @id @default(cuid())
+  taskId         String
+  task           Task               @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  remindAt       DateTime
+  status         TaskReminderStatus @default(PENDING)
+  notification   Notification?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  processedAt    DateTime?
+  canceledAt     DateTime?
+
+  @@index([status, remindAt])
+  @@index([taskId, status])
+}
+
+enum TaskReminderStatus {
+  PENDING
+  SENT
+  COMPLETED
+  CANCELED
+}

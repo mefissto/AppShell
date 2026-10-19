@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
-import { TaskReminderStatus } from '@generated/prisma/client';
+import { Prisma, TaskReminderStatus } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
+import { TaskRemindersService } from '@modules/task-reminders/task-reminders.service';
 import { EntityListRequestBuilder } from '@pagination/builders/entity-list-request.builder';
 import { EntityListResponseDto } from '@pagination/interfaces/entity-list-response.dto';
 import { PaginationService } from '@pagination/services/pagination.service';
@@ -22,6 +23,7 @@ export class TasksService {
     private readonly paginationService: PaginationService,
     private readonly auditLogger: AuditLoggerService,
     private readonly logger: LoggerService,
+    private readonly taskRemindersService: TaskRemindersService,
   ) {}
 
   /**
@@ -320,18 +322,39 @@ export class TasksService {
   }
 
   /**
-   * Deletes a task by its ID.
+   * Soft deletes a task by its ID.
    * @param taskId - The ID of the task to delete.
    * @returns void.
    */
-  async delete(taskId: string, userId: string): Promise<void> {
-    // Using deleteMany to ensure userId is also matched to prevent deleting tasks not owned by the user
-    // deleteMany returns a count of deleted records to verify if a task was deleted
-    const deleted = await this.prisma.task.deleteMany({
-      where: { id: taskId, userId },
-    });
+  async softDelete(taskId: string, userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(
+        async (transactionClient: Prisma.TransactionClient) => {
+          // Using updateMany to ensure userId is also matched to prevent deleting tasks not owned by the user
+          // updateMany returns a count of updated records to verify if a task was soft deleted
+          const deleted = await transactionClient.task.updateMany({
+            where: { id: taskId, userId, deletedAt: null },
+            data: { deletedAt: new Date() },
+          });
 
-    if (deleted.count === 0) {
+          if (deleted.count === 0) {
+            throw new NotFoundException(`Task with ID ${taskId} not found`);
+          }
+
+          await this.taskRemindersService.cancelPendingForTask(
+            taskId,
+            transactionClient,
+          );
+        },
+      );
+
+      this.auditLogger.log({
+        action: TaskAuditAction.TASK_DELETE_SUCCESS,
+        actorUserId: userId,
+        targetEntity: TaskEntity.name,
+        targetEntityId: taskId,
+      });
+    } catch (error) {
       this.auditLogger.log({
         action: TaskAuditAction.TASK_DELETE_FAILURE,
         actorUserId: userId,
@@ -339,14 +362,7 @@ export class TasksService {
         targetEntityId: taskId,
       });
 
-      throw new NotFoundException(`Task with ID ${taskId} not found`);
-    } else {
-      this.auditLogger.log({
-        action: TaskAuditAction.TASK_DELETE_SUCCESS,
-        actorUserId: userId,
-        targetEntity: TaskEntity.name,
-        targetEntityId: taskId,
-      });
+      throw error;
     }
   }
 

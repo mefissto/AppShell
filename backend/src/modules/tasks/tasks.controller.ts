@@ -199,6 +199,6 @@ export class TasksController {
     @Param('id') id: string,
     @CurrentUser() currentUser: UserEntity,
   ): Promise<void> {
-    return this.tasksService.delete(id, currentUser.id);
+    return this.tasksService.softDelete(id, currentUser.id);
   }
 }

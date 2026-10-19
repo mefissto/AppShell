@@ -25,6 +25,37 @@ export class TaskRemindersService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
+  async findAllForTask(
+    taskId: string,
+    userId: string,
+  ): Promise<TaskReminderEntity[]> {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId,
+        userId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const reminders = await this.prisma.taskReminder.findMany({
+      where: {
+        taskId,
+        task: {
+          userId,
+          deletedAt: null,
+        },
+      },
+      orderBy: { remindAt: 'asc' },
+    });
+
+    return reminders.map((reminder) => new TaskReminderEntity(reminder));
+  }
+
   async schedule(
     taskId: string,
     userId: string,
@@ -50,6 +81,7 @@ export class TaskRemindersService {
 
   async reschedule(
     reminderId: string,
+    taskId: string,
     userId: string,
     remindAt: Date,
   ): Promise<TaskReminderEntity> {
@@ -59,25 +91,24 @@ export class TaskRemindersService {
 
     const reminder = await this.prisma.$transaction(
       async (transactionClient: Prisma.TransactionClient) => {
-        // Find reminder to git it's taskId
         const reminder = await transactionClient.taskReminder.findUnique({
-          where: { id: reminderId },
-          select: { taskId: true },
+          where: { id: reminderId, taskId },
         });
 
         if (!reminder) {
           throw new NotFoundException(
-            `Reminder with id "${reminderId}: not found`,
+            `Reminder with id "${reminderId}" not found`,
           );
         }
 
-        await this.lockActiveTask(reminder.taskId, userId, transactionClient);
+        await this.lockActiveTask(taskId, userId, transactionClient);
 
         const updates =
           await transactionClient.taskReminder.updateManyAndReturn({
             where: {
               id: reminderId,
               status: TaskReminderStatus.PENDING,
+              taskId,
               task: {
                 userId,
                 deletedAt: null,
@@ -90,11 +121,9 @@ export class TaskRemindersService {
           });
 
         if (updates.length === 1) {
-          const prevReminder = updates[0];
-
           return transactionClient.taskReminder.create({
             data: {
-              taskId: prevReminder.taskId,
+              taskId,
               remindAt,
             },
           });
@@ -102,6 +131,7 @@ export class TaskRemindersService {
           const reminder = await transactionClient.taskReminder.findUnique({
             where: {
               id: reminderId,
+              taskId,
               task: {
                 userId,
                 deletedAt: null,
@@ -127,12 +157,14 @@ export class TaskRemindersService {
 
   async cancel(
     reminderId: string,
+    taskId: string,
     userId: string,
-  ): Promise<TaskReminderEntity | null> {
+  ): Promise<TaskReminderEntity> {
     const updateResults = await this.prisma.taskReminder.updateManyAndReturn({
       where: {
         id: reminderId,
         status: TaskReminderStatus.PENDING,
+        taskId,
         task: {
           userId,
           deletedAt: null,
@@ -152,6 +184,7 @@ export class TaskRemindersService {
       where: {
         id: reminderId,
         status: { not: TaskReminderStatus.PENDING },
+        taskId,
         task: {
           userId,
           deletedAt: null,
@@ -224,7 +257,7 @@ export class TaskRemindersService {
           where: { id: reminderId },
           select: {
             taskId: true,
-            task: { select: { id: true, userId: true } },
+            task: { select: { userId: true } },
           },
         });
 
@@ -256,7 +289,7 @@ export class TaskRemindersService {
             },
             include: {
               task: {
-                select: { id: true, title: true, dueDate: true, userId: true },
+                select: { title: true, dueDate: true, userId: true },
               },
             },
             data: {

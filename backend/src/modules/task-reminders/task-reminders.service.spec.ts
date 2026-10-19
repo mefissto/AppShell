@@ -31,6 +31,7 @@ describe('TaskRemindersService', () => {
   let service: TaskRemindersService;
   let prisma: {
     $transaction: jest.Mock;
+    task: { findFirst: jest.Mock };
     taskReminder: ReturnType<typeof delegate>;
   };
   let tx: { $queryRaw: jest.Mock; taskReminder: ReturnType<typeof delegate> };
@@ -56,6 +57,7 @@ describe('TaskRemindersService', () => {
     dueDate: null as Date | null,
   };
   const pendingWhere = {
+    taskId: 't1',
     id: 'r1',
     status: Status.PENDING,
     task: { userId: 'u1', deletedAt: null },
@@ -77,7 +79,11 @@ describe('TaskRemindersService', () => {
   };
   beforeEach(async () => {
     jest.useFakeTimers().setSystemTime(now);
-    prisma = { $transaction: jest.fn(), taskReminder: delegate() };
+    prisma = {
+      $transaction: jest.fn(),
+      task: { findFirst: jest.fn() },
+      taskReminder: delegate(),
+    };
     tx = {
       $queryRaw: jest.fn().mockResolvedValue([{ id: 't1' }]),
       taskReminder: delegate(),
@@ -104,6 +110,105 @@ describe('TaskRemindersService', () => {
 
   afterEach(() => jest.useRealTimers());
 
+  describe('findAllForTask', () => {
+    it('returns reminder entities in database order with ownership and active-task filters', async () => {
+      // Arrange: listing includes pending and historical reminders.
+      const reminders = [
+        {
+          ...row(Status.COMPLETED),
+          id: 'completed',
+          remindAt: now,
+          processedAt: now,
+        },
+        { ...row(Status.CANCELED), id: 'canceled', canceledAt: now },
+        { ...row(), id: 'pending' },
+      ];
+      prisma.task.findFirst.mockResolvedValueOnce({ id: 't1' });
+      prisma.taskReminder.findMany.mockResolvedValueOnce(reminders);
+
+      // Act
+      const result = await service.findAllForTask('t1', 'u1');
+
+      // Assert: Prisma handles sorting; the service maps each row to an entity.
+      expect(prisma.task.findFirst).toHaveBeenCalledTimes(1);
+      expect(prisma.task.findFirst).toHaveBeenCalledWith({
+        where: { id: 't1', userId: 'u1', deletedAt: null },
+        select: { id: true },
+      });
+      expect(prisma.taskReminder.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.taskReminder.findMany).toHaveBeenCalledWith({
+        where: { taskId: 't1', task: { userId: 'u1', deletedAt: null } },
+        orderBy: { remindAt: 'asc' },
+      });
+      expect(result).toEqual(
+        reminders.map((reminder) => new TaskReminderEntity(reminder)),
+      );
+      expect(result.map((reminder) => reminder.id)).toEqual([
+        'completed',
+        'canceled',
+        'pending',
+      ]);
+      result.forEach((reminder, index) => {
+        expect(reminder).toBeInstanceOf(TaskReminderEntity);
+        expect(reminder).not.toBe(reminders[index]);
+      });
+      expect(prisma.task.findFirst.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.taskReminder.findMany.mock.invocationCallOrder[0],
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(notifications.createNotification).not.toHaveBeenCalled();
+    });
+
+    it('returns an empty array for an accessible task without reminders', async () => {
+      // Arrange
+      prisma.task.findFirst.mockResolvedValueOnce({ id: 't1' });
+      prisma.taskReminder.findMany.mockResolvedValueOnce([]);
+
+      // Act
+      const result = await service.findAllForTask('t1', 'u1');
+
+      // Assert
+      expect(result).toEqual([]);
+      expect(prisma.taskReminder.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a missing, foreign-owned, or deleted task before querying reminders', async () => {
+      // Arrange: all three cases yield no row for the scoped task query.
+      prisma.task.findFirst.mockResolvedValueOnce(null);
+
+      // Act & Assert
+      await expect(service.findAllForTask('t1', 'u1')).rejects.toThrow(
+        new NotFoundException('Task not found'),
+      );
+      expect(prisma.task.findFirst).toHaveBeenCalledWith({
+        where: { id: 't1', userId: 'u1', deletedAt: null },
+        select: { id: true },
+      });
+      expect(prisma.taskReminder.findMany).not.toHaveBeenCalled();
+    });
+
+    it('propagates task lookup failure without querying reminders', async () => {
+      // Arrange
+      const error = new Error('task lookup failed');
+      prisma.task.findFirst.mockRejectedValueOnce(error);
+
+      // Act & Assert
+      await expect(service.findAllForTask('t1', 'u1')).rejects.toBe(error);
+      expect(prisma.taskReminder.findMany).not.toHaveBeenCalled();
+    });
+
+    it('propagates reminder lookup failure unchanged', async () => {
+      // Arrange
+      const error = new Error('reminder lookup failed');
+      prisma.task.findFirst.mockResolvedValueOnce({ id: 't1' });
+      prisma.taskReminder.findMany.mockRejectedValueOnce(error);
+
+      // Act & Assert
+      await expect(service.findAllForTask('t1', 'u1')).rejects.toBe(error);
+      expect(prisma.taskReminder.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe.each(['schedule', 'reschedule'] as const)(
     '%s common guards',
     (method) => {
@@ -120,7 +225,9 @@ describe('TaskRemindersService', () => {
         async (value) => {
           // Act & Assert: verify the public method outcome.
           await expect(
-            service[method]('r1', 'u1', value as Date),
+            method === 'schedule'
+              ? service.schedule('t1', 'u1', value as Date)
+              : service.reschedule('r1', 't1', 'u1', value as Date),
           ).rejects.toThrow(BadRequestException);
           expect(prisma.$transaction).not.toHaveBeenCalled();
         },
@@ -132,7 +239,11 @@ describe('TaskRemindersService', () => {
         prisma.$transaction.mockRejectedValueOnce(error);
 
         // Act & Assert: verify the public method outcome.
-        await expect(service[method]('r1', 'u1', future)).rejects.toBe(error);
+        await expect(
+          method === 'schedule'
+            ? service.schedule('t1', 'u1', future)
+            : service.reschedule('r1', 't1', 'u1', future),
+        ).rejects.toBe(error);
       });
     },
   );
@@ -205,7 +316,7 @@ describe('TaskRemindersService', () => {
       });
 
       // Act
-      const result = await service.reschedule('r1', 'u1', future);
+      const result = await service.reschedule('r1', 't1', 'u1', future);
 
       // Assert
       expect(result).toBeInstanceOf(TaskReminderEntity);
@@ -215,8 +326,7 @@ describe('TaskRemindersService', () => {
         remindAt: future,
       });
       expect(tx.taskReminder.findUnique).toHaveBeenCalledWith({
-        where: { id: 'r1' },
-        select: { taskId: true },
+        where: { id: 'r1', taskId: 't1' },
       });
       expectLock();
       expect(tx.taskReminder.updateManyAndReturn).toHaveBeenCalledWith({
@@ -240,9 +350,9 @@ describe('TaskRemindersService', () => {
       tx.taskReminder.findUnique.mockReset().mockResolvedValueOnce(null);
 
       // Act & Assert: verify the public method outcome.
-      await expect(service.reschedule('r1', 'u1', future)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.reschedule('r1', 't1', 'u1', future),
+      ).rejects.toThrow(NotFoundException);
       expect(tx.$queryRaw).not.toHaveBeenCalled();
       expect(tx.taskReminder.updateManyAndReturn).not.toHaveBeenCalled();
     });
@@ -252,9 +362,9 @@ describe('TaskRemindersService', () => {
       tx.$queryRaw.mockResolvedValueOnce([]);
 
       // Act & Assert: verify the public method outcome.
-      await expect(service.reschedule('r1', 'u1', future)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.reschedule('r1', 't1', 'u1', future),
+      ).rejects.toThrow(NotFoundException);
       expectLock();
       expect(tx.taskReminder.updateManyAndReturn).not.toHaveBeenCalled();
       expect(tx.taskReminder.create).not.toHaveBeenCalled();
@@ -268,13 +378,19 @@ describe('TaskRemindersService', () => {
         tx.taskReminder.findUnique.mockResolvedValueOnce(row(status));
 
         // Act & Assert: verify the public method outcome.
-        await expect(service.reschedule('r1', 'u1', future)).rejects.toThrow(
+        await expect(
+          service.reschedule('r1', 't1', 'u1', future),
+        ).rejects.toThrow(
           new ConflictException(
             `Reminder can't be rescheduled because it is in ${status} status.`,
           ),
         );
         expect(tx.taskReminder.findUnique).toHaveBeenLastCalledWith({
-          where: { id: 'r1', task: { userId: 'u1', deletedAt: null } },
+          where: {
+            id: 'r1',
+            taskId: 't1',
+            task: { userId: 'u1', deletedAt: null },
+          },
         });
         expect(tx.taskReminder.create).not.toHaveBeenCalled();
       },
@@ -286,9 +402,9 @@ describe('TaskRemindersService', () => {
       tx.taskReminder.findUnique.mockResolvedValueOnce(null);
 
       // Act & Assert: verify the public method outcome.
-      await expect(service.reschedule('r1', 'u1', future)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.reschedule('r1', 't1', 'u1', future),
+      ).rejects.toThrow(NotFoundException);
       expect(tx.taskReminder.create).not.toHaveBeenCalled();
     });
 
@@ -309,7 +425,7 @@ describe('TaskRemindersService', () => {
           tx.taskReminder.create.mockRejectedValueOnce(error);
 
         // Act & Assert: verify the public method outcome.
-        await expect(service.reschedule('r1', 'u1', future)).rejects.toBe(
+        await expect(service.reschedule('r1', 't1', 'u1', future)).rejects.toBe(
           error,
         );
         if (stage !== 'replacement')
@@ -326,7 +442,7 @@ describe('TaskRemindersService', () => {
       ]);
 
       // Act
-      const result = await service.cancel('r1', 'u1');
+      const result = await service.cancel('r1', 't1', 'u1');
 
       // Assert
       expect(result).toBeInstanceOf(TaskReminderEntity);
@@ -355,7 +471,7 @@ describe('TaskRemindersService', () => {
       );
 
       // Act
-      const result = service.cancel('r1', 'u1');
+      const result = service.cancel('r1', 't1', 'u1');
 
       // Assert
       if (exception) await expect(result).rejects.toThrow(exception);
@@ -368,6 +484,7 @@ describe('TaskRemindersService', () => {
         where: {
           id: 'r1',
           status: { not: Status.PENDING },
+          taskId: 't1',
           task: { userId: 'u1', deletedAt: null },
         },
       });
@@ -384,7 +501,7 @@ describe('TaskRemindersService', () => {
       else prisma.taskReminder.findUnique.mockRejectedValueOnce(error);
 
       // Act & Assert: verify the public method outcome.
-      await expect(service.cancel('r1', 'u1')).rejects.toBe(error);
+      await expect(service.cancel('r1', 't1', 'u1')).rejects.toBe(error);
     });
   });
 
@@ -468,7 +585,7 @@ describe('TaskRemindersService', () => {
           where: { id: 'r1' },
           select: {
             taskId: true,
-            task: { select: { id: true, userId: true } },
+            task: { select: { userId: true } },
           },
         });
         expect(tx.taskReminder.updateManyAndReturn).toHaveBeenCalledWith({
@@ -480,7 +597,7 @@ describe('TaskRemindersService', () => {
           },
           include: {
             task: {
-              select: { id: true, title: true, dueDate: true, userId: true },
+              select: { title: true, dueDate: true, userId: true },
             },
           },
           data: { status: Status.COMPLETED, processedAt: now },

@@ -4,8 +4,6 @@
   - A unique constraint covering the columns `[reminderId]` on the table `Notification` will be added. If there are existing duplicate values, this will fail.
 
 */
--- AlterEnum
-ALTER TYPE "TaskReminderStatus" ADD VALUE 'COMPLETED';
 
 -- AlterTable
 ALTER TABLE "Notification" ADD COLUMN     "reminderId" TEXT;

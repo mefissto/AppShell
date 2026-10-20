@@ -1,0 +1,1 @@
+ALTER TYPE "TaskReminderStatus" ADD VALUE 'COMPLETED';

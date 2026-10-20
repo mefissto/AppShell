@@ -12,8 +12,6 @@ model Task {
   deletedAt      DateTime?
   dueDate        DateTime?
   metadata       Json?
-  remindAt       DateTime?
-  reminderStatus TaskReminderStatus @default(CANCELED)
   // Required relationship to User
   userId         String
   user           User               @relation(fields: [userId], references: [id])

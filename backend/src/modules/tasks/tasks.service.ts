@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
-import { Prisma, TaskReminderStatus } from '@generated/prisma';
+import { Prisma } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
@@ -123,10 +123,6 @@ export class TasksService {
         return await prisma.task.create({
           data: {
             ...taskData,
-            // Only set reminderStatus to PENDING if remindAt is being set, skip (undefined) otherwise.
-            reminderStatus: taskData.remindAt
-              ? TaskReminderStatus.PENDING
-              : undefined,
             userId,
             tags: {
               create: uniqueTagIds.map((tagId) => ({
@@ -200,12 +196,6 @@ export class TasksService {
           where: { id: taskId, userId, deletedAt: null },
           data: {
             ...taskData,
-            // Only update reminderStatus to PENDING if remindAt is being set/updated.
-            // If remindAt is not provided in the update DTO, we should not change the existing reminderStatus (even if remindAt exists on the task),
-            // because the client did not intend to update the reminder date.
-            reminderStatus: taskData.remindAt
-              ? TaskReminderStatus.PENDING
-              : undefined,
             tags: needToUpdateTags
               ? {
                   deleteMany: {}, // remove all current task-tag rows for this task

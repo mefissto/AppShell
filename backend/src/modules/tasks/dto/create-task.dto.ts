@@ -11,7 +11,6 @@ import {
   MaxLength,
 } from 'class-validator';
 
-import { IsBefore } from '@decorators/validators/is-before.decorator';
 import { IsCuid } from '@decorators/validators/is-cuid.decorator';
 import { IsValidMetadata } from '@decorators/validators/is-valid-metadata.decorator';
 import { Prisma, TaskStatus } from '@generated/prisma';
@@ -69,20 +68,6 @@ export class CreateTaskDto {
     { message: 'Due date must be a valid ISO 8601 date string' },
   )
   dueDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Reminder date for the task.',
-    example: '2024-12-30T23:59:59.000Z',
-  })
-  @IsOptional()
-  @IsISO8601(
-    { strict: true, strictSeparator: true },
-    { message: 'Reminder date must be a valid ISO 8601 date string' },
-  )
-  @IsBefore('dueDate', {
-    message: 'Reminder date must be equal to or before the due date',
-  })
-  remindAt?: Date;
 
   @ApiPropertyOptional({
     description:

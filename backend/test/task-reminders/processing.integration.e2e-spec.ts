@@ -99,6 +99,7 @@ describe('Processing task reminders (e2e)', () => {
       CREATE TRIGGER test_reject_notification_insert_trigger
       BEFORE INSERT ON "Notification"
       FOR EACH ROW
+      WHEN (NEW."reminderId" = '${reminder.id}')
       EXECUTE FUNCTION test_reject_notification_insert();
     `);
 

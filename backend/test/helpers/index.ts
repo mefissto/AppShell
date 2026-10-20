@@ -4,13 +4,15 @@ export {
   hasAuthCookies,
   loginAndGetCookies,
   parseSetCookie,
-  registerAndLogin,
+  registerAndLogin
 } from './auth';
-export { cleanupUserByEmail, disconnectPrisma } from './db';
+export { cleanupUserByEmail, createTask, disconnectPrisma } from './db';
 export {
   CleanupRegistry,
   createTestUserInput,
   createUniqueEmail,
   createUniqueSuffix,
-  type TestUserInput,
+  type TestUserInput
 } from './test-data';
+export { resetTestThrottler } from './utils';
+

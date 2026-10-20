@@ -15,7 +15,7 @@ export class ScheduleTaskReminderDto {
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/,
     {
       message:
-        'remindAt must be a timestamp with an explicit timezone (Z or ?HH:mm)',
+        'remindAt must be a timestamp with an explicit timezone (Z or ±HH:mm)',
     },
   )
   remindAt: string;

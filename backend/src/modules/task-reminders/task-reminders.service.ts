@@ -230,7 +230,7 @@ export class TaskRemindersService {
           deletedAt: null,
         },
       },
-      orderBy: { remindAt: 'asc', id: 'asc' },
+      orderBy: [{ remindAt: 'asc' }, { id: 'asc' }],
       select: { id: true },
       take: 100,
     });

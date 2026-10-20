@@ -38,7 +38,7 @@ describe('POST /auth/register (e2e)', () => {
 
   beforeEach(async () => {
     // Reset hit history and timers as well as visible storage between tests.
-    throttlerStorage.onApplicationShutdown();
+    helpers.resetTestThrottler(throttlerStorage);
 
     testUser = helpers.createTestUserInput('auth-register');
     cleanupRegistry = new helpers.CleanupRegistry();

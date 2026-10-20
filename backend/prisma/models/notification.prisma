@@ -1,0 +1,24 @@
+// ===================
+// Notification
+// ===================
+model Notification {
+    id        String           @id @default(cuid())
+    type      NotificationType
+    message   String
+    payload   Json? // Optional JSON payload for additional data related to the notification
+    read      Boolean          @default(false)
+    createdAt DateTime         @default(now())
+    updatedAt DateTime         @updatedAt
+    // Required relationship to User
+    userId    String
+    user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    reminderId String?       @unique
+    reminder   TaskReminder? @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+}
+
+enum NotificationType {
+    EMAIL
+    PUSH
+    IN_APP
+}

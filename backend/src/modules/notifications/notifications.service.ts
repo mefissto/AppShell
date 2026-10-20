@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { Prisma } from '@generated/prisma';
 
 import { EmailVerificationPayload } from './interfaces/email-verification.interface';
 import { Notification } from './interfaces/notification.interface';
@@ -24,14 +25,20 @@ export class NotificationsService {
     await this.emailService.sendEmailVerificationEmail(payload);
   }
 
-  async createNotification(notification: Notification): Promise<void> {
-    await this.prisma.notification.create({
+  async createNotification(
+    notification: Notification,
+    transactionClient?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = transactionClient ?? this.prisma;
+
+    await client.notification.create({
       data: {
         userId: notification.userId,
         type: notification.type,
         message: notification.message,
         read: notification.read,
         payload: notification.payload ?? undefined,
+        reminderId: notification.reminderId,
       },
     });
   }

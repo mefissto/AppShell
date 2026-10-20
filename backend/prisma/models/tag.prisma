@@ -1,0 +1,30 @@
+// ===================
+// Tag
+// ===================
+model Tag {
+    id        String    @id @default(cuid())
+    name      String // The display name of the tag
+    nameLower String    @unique // A lowercase version of the name for case-insensitive uniqueness
+    color     String? // Optional color for the tag
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    // Required relationship to User
+    userId    String
+    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    // Many-to-many relationship with Task through TaskTag
+    tasks     TaskTag[]
+
+    @@unique([id, userId]) // Ensure tag IDs are unique per user
+    @@unique([userId, nameLower]) // Ensure tag names are unique per user, case-insensitively
+}
+
+model TaskTag {
+    // Composite model for many-to-many relationship between Task and Tag
+    task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+    taskId String
+    // Composite relationship to Tag   
+    tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+    tagId  String
+
+    @@id([taskId, tagId])
+}

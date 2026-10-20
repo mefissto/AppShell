@@ -28,7 +28,7 @@ export class SchedulerRunner {
         errorStack: error instanceof Error ? error.stack : undefined,
       });
 
-      throw error; // rethrow to allow Nest's scheduler to handle retries/failures as configured
+      throw error;
     }
   }
 }

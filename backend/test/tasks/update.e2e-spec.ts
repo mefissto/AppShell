@@ -32,7 +32,7 @@ describe('PATCH /tasks/:id (e2e)', () => {
 
   beforeEach(async () => {
     // Reset hit history and timers as well as visible storage between tests.
-    throttlerStorage.onApplicationShutdown();
+    helpers.resetTestThrottler(throttlerStorage);
 
     cleanupRegistry = new helpers.CleanupRegistry();
     ownerUser = helpers.createTestUserInput('tasks-update-owner');

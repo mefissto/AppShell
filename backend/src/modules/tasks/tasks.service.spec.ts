@@ -2,9 +2,10 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '@database/prisma.service';
-import { TaskReminderStatus, TaskStatus } from '@generated/prisma';
+import { TaskStatus } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { TaskRemindersService } from '@modules/task-reminders/task-reminders.service';
 import { PaginationService } from '@pagination/services/pagination.service';
 
 import { TaskListRequestDto } from './dto/task-list-request.dto';
@@ -36,6 +37,7 @@ describe('TasksService', () => {
   let paginationService: { buildResponse: jest.Mock };
   let auditLoggerService: { log: jest.Mock };
   let loggerService: { warn: jest.Mock };
+  let taskRemindersService: { cancelPendingForTask: jest.Mock };
 
   const mockTask = () => ({
     id: 'task-1',
@@ -72,6 +74,7 @@ describe('TasksService', () => {
     paginationService = { buildResponse: jest.fn() };
     auditLoggerService = { log: jest.fn() };
     loggerService = { warn: jest.fn() };
+    taskRemindersService = { cancelPendingForTask: jest.fn() };
 
     prisma.$transaction.mockImplementation(async (callback) =>
       callback(prisma),
@@ -84,6 +87,7 @@ describe('TasksService', () => {
         { provide: PaginationService, useValue: paginationService },
         { provide: AuditLoggerService, useValue: auditLoggerService },
         { provide: LoggerService, useValue: loggerService },
+        { provide: TaskRemindersService, useValue: taskRemindersService },
       ],
     }).compile();
 
@@ -346,21 +350,26 @@ describe('TasksService', () => {
     });
   });
 
-  describe('delete', () => {
-    it('should delete a task', async () => {
-      prisma.task.deleteMany.mockResolvedValueOnce({ count: 1 });
+  describe('softDelete', () => {
+    it('should softDelete a task', async () => {
+      prisma.task.updateMany.mockResolvedValueOnce({ count: 1 });
 
-      await service.delete('task-1', 'user-1');
+      await service.softDelete('task-1', 'user-1');
 
-      expect(prisma.task.deleteMany).toHaveBeenCalledWith({
-        where: { id: 'task-1', userId: 'user-1' },
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: 'task-1', userId: 'user-1', deletedAt: null },
+        data: { deletedAt: expect.any(Date) },
       });
+      expect(taskRemindersService.cancelPendingForTask).toHaveBeenCalledWith(
+        'task-1',
+        prisma,
+      );
     });
 
-    it('should throw when task to delete is missing', async () => {
-      prisma.task.deleteMany.mockResolvedValueOnce({ count: 0 });
+    it('should throw when task to softDelete is missing', async () => {
+      prisma.task.updateMany.mockResolvedValueOnce({ count: 0 });
 
-      await expect(service.delete('missing', 'user-1')).rejects.toThrow(
+      await expect(service.softDelete('missing', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -473,63 +482,6 @@ describe('TasksService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(prisma.task.findFirstOrThrow).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('findTasksWithPendingReminders', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-      jest.setSystemTime(new Date('2026-02-20T12:00:00.000Z'));
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it('should query pending reminders in today range and map to TaskEntity', async () => {
-      const task = {
-        ...mockTask(),
-        remindAt: new Date('2026-02-20T08:00:00.000Z'),
-        dueDate: new Date('2026-02-20T20:00:00.000Z'),
-        reminderStatus: TaskReminderStatus.PENDING,
-      };
-      prisma.task.findMany.mockResolvedValueOnce([task]);
-
-      const result = await service.findTasksWithPendingReminders();
-
-      expect(prisma.task.findMany).toHaveBeenCalledWith({
-        where: {
-          reminderStatus: TaskReminderStatus.PENDING,
-          remindAt: {
-            not: null,
-            gte: new Date(2026, 1, 20),
-            lte: new Date(2026, 1, 21),
-          },
-        },
-      });
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(TaskEntity);
-      expect(result[0]).toEqual(expect.objectContaining({ id: 'task-1' }));
-    });
-  });
-
-  describe('markTaskReminderSent', () => {
-    it('should update reminder status to SENT and clear remindAt', async () => {
-      const updatedTask = {
-        ...mockTask(),
-        remindAt: null,
-        reminderStatus: TaskReminderStatus.SENT,
-      };
-      prisma.task.update.mockResolvedValueOnce(updatedTask);
-
-      const result = await service.markTaskReminderSent('task-1');
-
-      expect(prisma.task.update).toHaveBeenCalledWith({
-        where: { id: 'task-1' },
-        data: { reminderStatus: TaskReminderStatus.SENT, remindAt: null },
-      });
-      expect(result).toBeInstanceOf(TaskEntity);
-      expect(result).toEqual(expect.objectContaining({ id: 'task-1' }));
     });
   });
 });

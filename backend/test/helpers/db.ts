@@ -40,3 +40,8 @@ export const disconnectPrisma = async (
 ): Promise<void> => {
   await prisma.$disconnect();
 };
+
+export const createTask = async (
+  prisma: PrismaService,
+  data: Prisma.XOR<Prisma.TaskCreateInput, Prisma.TaskUncheckedCreateInput>,
+) => prisma.task.create({ data });

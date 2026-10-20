@@ -30,7 +30,7 @@ describe('POST /auth/verify-email (e2e)', () => {
   beforeEach(async () => {
     // Clear throttler storage to prevent rate limit issues during tests
     // Reset hit history and timers as well as visible storage between tests.
-    throttlerStorage.onApplicationShutdown();
+    helpers.resetTestThrottler(throttlerStorage);
 
     testUser = helpers.createTestUserInput('auth-verify-email');
     cleanupRegistry = new helpers.CleanupRegistry();

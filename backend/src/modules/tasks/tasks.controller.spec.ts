@@ -13,7 +13,7 @@ describe('TasksController', () => {
     create: jest.Mock;
     update: jest.Mock;
     assignToProject: jest.Mock;
-    delete: jest.Mock;
+    softDelete: jest.Mock;
   };
 
   const mockTask = () => ({
@@ -40,7 +40,7 @@ describe('TasksController', () => {
       create: jest.fn(),
       update: jest.fn(),
       assignToProject: jest.fn(),
-      delete: jest.fn(),
+      softDelete: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -205,16 +205,16 @@ describe('TasksController', () => {
 
   describe('delete', () => {
     it('should delete the task', async () => {
-      tasksService.delete.mockResolvedValueOnce(undefined);
+      tasksService.softDelete.mockResolvedValueOnce(undefined);
       const user = mockCurrentUser();
 
       await controller.delete('t1', user);
 
-      expect(tasksService.delete).toHaveBeenCalledWith('t1', user.id);
+      expect(tasksService.softDelete).toHaveBeenCalledWith('t1', user.id);
     });
 
     it('should throw NotFoundException if task to delete not found', async () => {
-      tasksService.delete.mockRejectedValueOnce(
+      tasksService.softDelete.mockRejectedValueOnce(
         new NotFoundException('Task not found'),
       );
       const user = mockCurrentUser();
@@ -222,7 +222,7 @@ describe('TasksController', () => {
       await expect(controller.delete('t1', user)).rejects.toThrow(
         NotFoundException,
       );
-      expect(tasksService.delete).toHaveBeenCalledWith('t1', user.id);
+      expect(tasksService.softDelete).toHaveBeenCalledWith('t1', user.id);
     });
   });
 

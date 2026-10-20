@@ -1,104 +1,81 @@
-import { ActorType, NotificationType } from '@generated/prisma';
-import { JobAuditAction } from '@loggers/enums/audit-actions.enum';
-import { TaskEntity } from '@modules/tasks/entities/task.entity';
+import { TaskRemindersService } from '@modules/task-reminders/task-reminders.service';
 
 import { JobName } from '../enums/job-name.enum';
 import { SchedulerRunner } from '../scheduler.runner';
 import { TaskRemindersJob } from './task-reminders.job';
 
 describe('TaskRemindersJob', () => {
-  let runner: { execute: jest.Mock };
-  let tasksService: {
-    findTasksWithPendingReminders: jest.Mock;
-    markTaskReminderSent: jest.Mock;
-  };
-  let notificationsService: { createNotification: jest.Mock };
-  let auditLogger: { log: jest.Mock };
+  let runner: jest.Mocked<Pick<SchedulerRunner, 'execute'>>;
+  let taskRemindersService: jest.Mocked<
+    Pick<TaskRemindersService, 'processDueReminders'>
+  >;
   let job: TaskRemindersJob;
 
   beforeEach(() => {
-    runner = { execute: jest.fn() };
-    tasksService = {
-      findTasksWithPendingReminders: jest.fn(),
-      markTaskReminderSent: jest.fn(),
+    runner = {
+      execute: jest
+        .fn()
+        .mockImplementation(
+          async (_jobName: string, handler: () => Promise<void>) => {
+            await handler();
+          },
+        ),
     };
-    notificationsService = { createNotification: jest.fn() };
-    auditLogger = { log: jest.fn() };
+    taskRemindersService = {
+      processDueReminders: jest.fn().mockResolvedValue(undefined),
+    };
 
     job = new TaskRemindersJob(
-      runner as unknown as SchedulerRunner,
-      tasksService as never,
-      notificationsService as never,
-      auditLogger as never,
+      runner as SchedulerRunner,
+      taskRemindersService as TaskRemindersService,
     );
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should execute reminder workflow through scheduler runner', async () => {
-    runner.execute.mockImplementation(async (_jobName, handler) => {
-      await handler();
-    });
-
-    const dueDate = new Date('2026-02-20T10:00:00.000Z');
-    const pendingTask = new TaskEntity({
-      id: 'task-1',
-      title: 'Task A',
-      userId: 'user-1',
-      dueDate,
-      remindAt: new Date('2026-02-20T09:00:00.000Z'),
-    });
-
-    tasksService.findTasksWithPendingReminders.mockResolvedValue([pendingTask]);
-    notificationsService.createNotification.mockResolvedValue(undefined);
-    tasksService.markTaskReminderSent.mockResolvedValue(pendingTask);
-
+  it('should process due reminders through the scheduler runner', async () => {
     await job.handle();
 
+    expect(runner.execute).toHaveBeenCalledTimes(1);
     expect(runner.execute).toHaveBeenCalledWith(
       JobName.TaskReminders,
       expect.any(Function),
     );
-    expect(tasksService.findTasksWithPendingReminders).toHaveBeenCalledTimes(1);
-    expect(notificationsService.createNotification).toHaveBeenCalledWith({
-      userId: 'user-1',
-      message: `Reminder: Task "Task A" is due on ${dueDate.toLocaleString()}`,
-      type: NotificationType.EMAIL,
-    });
-    expect(auditLogger.log).toHaveBeenCalledWith({
-      action: JobAuditAction.TASK_REMINDERS_EXECUTION_SUCCESS,
-      actorType: ActorType.SYSTEM,
-      targetEntity: TaskEntity.name,
-      targetEntityId: 'task-1',
-    });
-    expect(tasksService.markTaskReminderSent).toHaveBeenCalledWith('task-1');
+    expect(taskRemindersService.processDueReminders).toHaveBeenCalledTimes(1);
+    expect(taskRemindersService.processDueReminders).toHaveBeenCalledWith();
   });
 
-  it('should build fallback message for tasks without due date', async () => {
-    runner.execute.mockImplementation(async (_jobName, handler) => {
-      await handler();
-    });
+  it('should wait for reminder processing to complete', async () => {
+    let completeProcessing!: () => void;
+    taskRemindersService.processDueReminders.mockReturnValue(
+      new Promise<void>((resolve) => {
+        completeProcessing = resolve;
+      }),
+    );
+    const onComplete = jest.fn();
 
-    const pendingTask = new TaskEntity({
-      id: 'task-2',
-      title: 'Task B',
-      userId: 'user-2',
-      dueDate: null,
-      remindAt: new Date('2026-02-20T09:00:00.000Z'),
-    });
+    const execution = job.handle().then(onComplete);
+    await Promise.resolve();
 
-    tasksService.findTasksWithPendingReminders.mockResolvedValue([pendingTask]);
-    notificationsService.createNotification.mockResolvedValue(undefined);
-    tasksService.markTaskReminderSent.mockResolvedValue(pendingTask);
+    expect(onComplete).not.toHaveBeenCalled();
 
-    await job.handle();
+    completeProcessing();
+    await execution;
 
-    expect(notificationsService.createNotification).toHaveBeenCalledWith({
-      userId: 'user-2',
-      message: 'Reminder: Task "Task B" is with no due date',
-      type: NotificationType.EMAIL,
-    });
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('should propagate reminder processing errors', async () => {
+    const error = new Error('Reminder processing failed');
+    taskRemindersService.processDueReminders.mockRejectedValue(error);
+
+    await expect(job.handle()).rejects.toBe(error);
+  });
+
+  it('should propagate runner errors without processing reminders', async () => {
+    const error = new Error('Runner failed');
+    runner.execute.mockRejectedValue(error);
+
+    await expect(job.handle()).rejects.toBe(error);
+
+    expect(taskRemindersService.processDueReminders).not.toHaveBeenCalled();
   });
 });

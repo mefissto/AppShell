@@ -1,13 +1,3 @@
-import { TasksService } from '@modules/tasks/tasks.service';
-import { PaginationService } from '@pagination/services/pagination.service';
-import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
-import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { PrismaService } from '@database/prisma.service';
 import {
   NotificationType,
@@ -15,7 +5,17 @@ import {
   TaskReminderStatus as Status,
 } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
+import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
 import { NotificationsService } from '@modules/notifications/notifications.service';
+import { TasksService } from '@modules/tasks/tasks.service';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { PaginationService } from '@pagination/services/pagination.service';
 import { TaskReminderEntity } from './entities/task-reminder.entity';
 import { TaskRemindersService } from './task-reminders.service';
 
@@ -560,7 +560,7 @@ describe('TaskRemindersService', () => {
           remindAt: { lte: now },
           task: { deletedAt: null },
         },
-        orderBy: { remindAt: 'asc', id: 'asc' },
+        orderBy: [{ remindAt: 'asc' }, { id: 'asc' }],
         select: { id: true },
         take: 100,
       });

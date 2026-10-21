@@ -2,8 +2,7 @@ import {
   Prisma,
   PrismaClient,
   TaskPriority,
-  TaskReminderStatus,
-  TaskStatus,
+  TaskStatus
 } from '@generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
@@ -176,8 +175,6 @@ function getTasksData(
       status: TaskStatus.PENDING,
       priority: TaskPriority.LOW,
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
-      remindAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // Remind 1 day before due date
-      reminderStatus: TaskReminderStatus.PENDING,
       userId,
       projectId,
     },
@@ -186,7 +183,6 @@ function getTasksData(
       description: 'This task is created for testing purposes.',
       status: TaskStatus.COMPLETED,
       priority: TaskPriority.MEDIUM,
-      reminderStatus: TaskReminderStatus.SENT,
       userId,
       projectId,
     },
@@ -195,7 +191,6 @@ function getTasksData(
       description: 'This is another task created for testing purposes.',
       status: TaskStatus.OVERDUE,
       priority: TaskPriority.HIGH,
-      reminderStatus: TaskReminderStatus.SENT,
       userId,
       projectId,
     },

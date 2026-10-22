@@ -5,6 +5,7 @@ import { PrismaService } from '@database/prisma.service';
 import { TaskStatus } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
+import { EmailOutboxService } from '@modules/email-outbox/email-outbox.service';
 import { TaskRemindersService } from '@modules/task-reminders/task-reminders.service';
 import { PaginationService } from '@pagination/services/pagination.service';
 
@@ -27,6 +28,7 @@ describe('TasksService', () => {
       findFirstOrThrow: jest.Mock;
       deleteMany: jest.Mock;
     };
+    taskReminder: { findMany: jest.Mock };
     tag: {
       findMany: jest.Mock;
     };
@@ -37,6 +39,7 @@ describe('TasksService', () => {
   let paginationService: { buildResponse: jest.Mock };
   let auditLoggerService: { log: jest.Mock };
   let loggerService: { warn: jest.Mock };
+  let outbox: jest.Mocked<Pick<EmailOutboxService, 'cancelForReminders'>>;
   let taskRemindersService: { cancelPendingForTask: jest.Mock };
 
   const mockTask = () => ({
@@ -64,6 +67,7 @@ describe('TasksService', () => {
         findFirstOrThrow: jest.fn(),
         deleteMany: jest.fn(),
       },
+      taskReminder: { findMany: jest.fn().mockResolvedValue([]) },
       tag: {
         findMany: jest.fn(),
       },
@@ -75,6 +79,7 @@ describe('TasksService', () => {
     auditLoggerService = { log: jest.fn() };
     loggerService = { warn: jest.fn() };
     taskRemindersService = { cancelPendingForTask: jest.fn() };
+    outbox = { cancelForReminders: jest.fn().mockResolvedValue(0) };
 
     prisma.$transaction.mockImplementation(async (callback) =>
       callback(prisma),
@@ -83,6 +88,7 @@ describe('TasksService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TasksService,
+        { provide: EmailOutboxService, useValue: outbox },
         { provide: PrismaService, useValue: prisma },
         { provide: PaginationService, useValue: paginationService },
         { provide: AuditLoggerService, useValue: auditLoggerService },
@@ -351,11 +357,26 @@ describe('TasksService', () => {
   });
 
   describe('softDelete', () => {
-    it('should softDelete a task', async () => {
+    it('soft deletes a task and cancels emails for all its reminders in the same transaction', async () => {
+      // Arrange: completed reminders may still have queued emails.
       prisma.task.updateMany.mockResolvedValueOnce({ count: 1 });
+      prisma.taskReminder.findMany.mockResolvedValueOnce([
+        { id: 'pending-reminder' },
+        { id: 'completed-reminder' },
+      ]);
 
+      // Act
       await service.softDelete('task-1', 'user-1');
 
+      // Assert
+      expect(prisma.taskReminder.findMany).toHaveBeenCalledWith({
+        select: { id: true },
+        where: { taskId: 'task-1' },
+      });
+      expect(outbox.cancelForReminders).toHaveBeenCalledWith(
+        ['pending-reminder', 'completed-reminder'],
+        prisma,
+      );
       expect(prisma.task.updateMany).toHaveBeenCalledWith({
         where: { id: 'task-1', userId: 'user-1', deletedAt: null },
         data: { deletedAt: expect.any(Date) },

@@ -1,0 +1,32 @@
+// ===================
+// Email Outbox
+// ===================
+model EmailOutbox {
+    id            String            @id @default(cuid())
+    to            String
+    subject       String
+    payload       Json
+    status        EmailOutboxStatus @default(PENDING)
+    attempts      Int               @default(0)
+    nextAttemptAt DateTime          @default(now())
+    sentAt        DateTime?
+    canceledAt    DateTime?
+    lockedUntil   DateTime?
+    claimToken    String?
+    entityType    String?
+    entityId      String?
+    lastError     String?
+    createdAt     DateTime          @default(now())
+    updatedAt     DateTime          @updatedAt
+
+    @@index([status, nextAttemptAt, createdAt])
+    @@index([entityType, entityId])
+}
+
+enum EmailOutboxStatus {
+    PENDING
+    PROCESSING
+    SENT
+    CANCELED
+    FAILED
+}

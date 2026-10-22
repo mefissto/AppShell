@@ -6,6 +6,8 @@ import { TaskReminderStatus, TaskStatus } from '@generated/prisma';
 import { TaskRemindersService } from '@modules/task-reminders/task-reminders.service';
 import { UsersService } from '@modules/users/users.service';
 
+import { EmailTemplate } from '@enums/email-template.enum';
+import { EntityType } from '@enums/entity.enum';
 import * as helpers from '../helpers';
 
 describe('Processing task reminders (e2e)', () => {
@@ -31,6 +33,19 @@ describe('Processing task reminders (e2e)', () => {
     ownerUser = helpers.createTestUserInput('reminders-processing-owner');
 
     cleanupRegistry.register(async () => {
+      await prisma.emailOutbox.deleteMany({
+        where: {
+          entityType: EntityType.TASK_REMINDER,
+          entityId: {
+            in: (
+              await prisma.taskReminder.findMany({
+                where: { task: { userId: ownerId } },
+                select: { id: true },
+              })
+            ).map(({ id }) => id),
+          },
+        },
+      });
       // Remove reminders before the shared helper hard-deletes their tasks.
       await prisma.taskReminder.deleteMany({
         where: { task: { user: { email: ownerUser.email } } },
@@ -47,6 +62,7 @@ describe('Processing task reminders (e2e)', () => {
 
   afterAll(async () => {
     await clearNotificationFailureTrigger();
+    await clearEmailOutboxFailureTrigger();
 
     await helpers.disconnectPrisma(prisma);
     await helpers.closeTestApp(app);
@@ -54,12 +70,22 @@ describe('Processing task reminders (e2e)', () => {
 
   const clearNotificationFailureTrigger = async () => {
     await prisma.$executeRawUnsafe(`
-      DROP TRIGGER IF EXISTS test_reject_notification_insert_trigger
-      ON "Notification";
-    `);
+        DROP TRIGGER IF EXISTS test_reject_notification_insert_trigger
+        ON "Notification";
+      `);
     await prisma.$executeRawUnsafe(`
-      DROP FUNCTION IF EXISTS test_reject_notification_insert();
-    `);
+        DROP FUNCTION IF EXISTS test_reject_notification_insert();
+      `);
+  };
+
+  const clearEmailOutboxFailureTrigger = async () => {
+    await prisma.$executeRawUnsafe(`
+        DROP TRIGGER IF EXISTS test_reject_email_outbox_insert_trigger
+        ON "EmailOutbox";
+      `);
+    await prisma.$executeRawUnsafe(`
+        DROP FUNCTION IF EXISTS test_reject_email_outbox_insert();
+      `);
   };
 
   const createTask = async (userId: string) =>
@@ -85,6 +111,10 @@ describe('Processing task reminders (e2e)', () => {
     const task = await createTask(ownerId);
     const pastRemindAt = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in the past
     const reminder = await createReminder(task.id, pastRemindAt);
+
+    /*
+     * Simulate notification insert failure for this reminder
+     */
 
     await prisma.$executeRawUnsafe(`
       CREATE OR REPLACE FUNCTION test_reject_notification_insert()
@@ -116,10 +146,58 @@ describe('Processing task reminders (e2e)', () => {
       const notifications1 = await prisma.notification.findMany({
         where: { reminderId: reminder.id },
       });
+      const emailOutboxEntries = await prisma.emailOutbox.findMany({
+        where: { entityId: reminder.id, entityType: EntityType.TASK_REMINDER },
+      });
 
       expect(notifications1).toHaveLength(0);
+      expect(emailOutboxEntries).toHaveLength(0);
     } finally {
       await clearNotificationFailureTrigger();
+    }
+
+    /*
+     * Simulate email outbox insert failure for this reminder
+     */
+
+    await prisma.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION test_reject_email_outbox_insert()
+      RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'Simulated email outbox insert failure';
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER test_reject_email_outbox_insert_trigger
+      BEFORE INSERT ON "EmailOutbox"
+      FOR EACH ROW
+      WHEN (NEW."entityId" = '${reminder.id}' AND NEW."entityType" = '${EntityType.TASK_REMINDER}')
+      EXECUTE FUNCTION test_reject_email_outbox_insert();
+    `);
+
+    try {
+      await taskRemindersService.processDueReminders();
+
+      const reminderAfterFailure = await prisma.taskReminder.findUniqueOrThrow({
+        where: { id: reminder.id },
+      });
+
+      expect(reminderAfterFailure.status).toBe(TaskReminderStatus.PENDING);
+      expect(reminderAfterFailure.processedAt).toBeNull();
+
+      const notifications2 = await prisma.notification.findMany({
+        where: { reminderId: reminder.id },
+      });
+      const emailOutboxEntries2 = await prisma.emailOutbox.findMany({
+        where: { entityId: reminder.id, entityType: EntityType.TASK_REMINDER },
+      });
+
+      expect(notifications2).toHaveLength(0);
+      expect(emailOutboxEntries2).toHaveLength(0);
+    } finally {
+      await clearEmailOutboxFailureTrigger();
     }
 
     await taskRemindersService.processDueReminders();
@@ -131,18 +209,48 @@ describe('Processing task reminders (e2e)', () => {
     expect(processedReminder.status).toBe(TaskReminderStatus.COMPLETED);
     expect(processedReminder.processedAt).toBeInstanceOf(Date);
 
-    const notifications2 = await prisma.notification.findMany({
-      where: { reminderId: reminder.id },
-    });
-
-    expect(notifications2).toHaveLength(1);
-
-    await taskRemindersService.processDueReminders();
-
     const notifications3 = await prisma.notification.findMany({
       where: { reminderId: reminder.id },
     });
+    const emailOutboxEntries3 = await prisma.emailOutbox.findMany({
+      where: { entityId: reminder.id, entityType: EntityType.TASK_REMINDER },
+    });
 
     expect(notifications3).toHaveLength(1);
+    expect(emailOutboxEntries3).toHaveLength(1);
+    expect(emailOutboxEntries3).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          to: ownerUser.email,
+          subject: expect.stringContaining(task.title),
+          payload: expect.objectContaining({
+            template: EmailTemplate.TASK_REMINDER,
+            data: expect.objectContaining({
+              taskTitle: task.title,
+              taskDueDate: task.dueDate?.toISOString() ?? null,
+            }),
+          }),
+          entityId: reminder.id,
+          entityType: EntityType.TASK_REMINDER,
+        }),
+      ]),
+    );
+
+    await taskRemindersService.processDueReminders();
+
+    expect(
+      await prisma.emailOutbox.count({
+        where: {
+          entityType: EntityType.TASK_REMINDER,
+          entityId: reminder.id,
+        },
+      }),
+    ).toBe(1);
+
+    expect(
+      await prisma.notification.count({
+        where: { reminderId: reminder.id },
+      }),
+    ).toBe(1);
   });
 });

@@ -9,13 +9,13 @@ import { EnvironmentModes } from '@interfaces/environment-variables';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { UserAuditAction } from '@loggers/enums/audit-actions.enum';
-import { NotificationsService } from '@modules/notifications/notifications.service';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
 import { UsersService } from '@modules/users/users.service';
 
 import { AuthService } from './auth.service';
 import { JwtTokenProvider } from './providers/jwt-token.provider';
+import { EmailVerificationService } from './services/email-verification.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -39,7 +39,7 @@ describe('AuthService', () => {
     generateRandomHash: jest.Mock;
     compare: jest.Mock;
   };
-  let notificationsService: { sendEmailVerificationEmail: jest.Mock };
+  let emailVerificationService: { sendEmailVerificationEmail: jest.Mock };
   let loggerService: { setContext: jest.Mock; warn: jest.Mock };
   let auditLoggerService: { log: jest.Mock };
   let mockAppConfig: { env: EnvironmentModes };
@@ -89,7 +89,7 @@ describe('AuthService', () => {
       generateRandomHash: jest.fn(),
       compare: jest.fn(),
     };
-    notificationsService = { sendEmailVerificationEmail: jest.fn() };
+    emailVerificationService = { sendEmailVerificationEmail: jest.fn() };
     loggerService = { setContext: jest.fn(), warn: jest.fn() };
     auditLoggerService = { log: jest.fn() };
     mockAppConfig = {
@@ -107,7 +107,10 @@ describe('AuthService', () => {
         { provide: SessionsService, useValue: sessionsService },
         { provide: JwtTokenProvider, useValue: jwtTokenProvider },
         { provide: HashingService, useValue: hashingService },
-        { provide: NotificationsService, useValue: notificationsService },
+        {
+          provide: EmailVerificationService,
+          useValue: emailVerificationService,
+        },
         { provide: LoggerService, useValue: loggerService },
         { provide: AuditLoggerService, useValue: auditLoggerService },
         { provide: appConfig.KEY, useValue: mockAppConfig },
@@ -176,6 +179,7 @@ describe('AuthService', () => {
 
   describe('signUp', () => {
     it('should send verification email and create user', async () => {
+      // Arrange
       const signUpDto = {
         name: 'Test User',
         email: 'test@example.com',
@@ -186,24 +190,23 @@ describe('AuthService', () => {
       usersService.findUnique.mockResolvedValueOnce(null);
       hashingService.generateRandomHash.mockReturnValueOnce('raw-token');
       hashingService.hash.mockResolvedValueOnce('hashed-token');
-      notificationsService.sendEmailVerificationEmail.mockResolvedValueOnce(
+      emailVerificationService.sendEmailVerificationEmail.mockResolvedValueOnce(
         undefined,
       );
       usersService.create.mockResolvedValueOnce(user);
 
+      // Act
       await authService.signUp(signUpDto);
 
+      // Assert: verification uses the dedicated email service and the user stores only the token hash.
       expect(hashingService.generateRandomHash).toHaveBeenCalled();
       expect(
-        notificationsService.sendEmailVerificationEmail,
+        emailVerificationService.sendEmailVerificationEmail,
       ).toHaveBeenCalledWith(
+        signUpDto.email,
         expect.objectContaining({
-          to: signUpDto.email,
-          subject: 'Verify Your Email Address',
-          data: expect.objectContaining({
-            userName: signUpDto.name,
-            verificationLink: expect.stringContaining('token=raw-token'),
-          }),
+          userName: signUpDto.name,
+          verificationLink: expect.stringContaining('token=raw-token'),
         }),
       );
       expect(usersService.create).toHaveBeenCalledWith(signUpDto, {
@@ -236,7 +239,7 @@ describe('AuthService', () => {
         email: signUpDto.email,
       });
       expect(
-        notificationsService.sendEmailVerificationEmail,
+        emailVerificationService.sendEmailVerificationEmail,
       ).not.toHaveBeenCalled();
       expect(usersService.create).not.toHaveBeenCalled();
       expect(auditLoggerService.log).toHaveBeenCalledWith({

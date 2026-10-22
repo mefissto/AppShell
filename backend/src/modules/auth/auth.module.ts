@@ -6,13 +6,14 @@ import { PassportModule } from '@nestjs/passport';
 import authConfig from '@config/auth.config';
 import { AuthStrategy } from '@enums/auth-strategy.enum';
 import { AuditLoggerModule } from '@loggers/audit/audit-logger.module';
-import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { EmailModule } from '@modules/email/email.module';
 import { SecurityModule } from '@modules/security/security.module';
 import { UsersModule } from '@modules/users/users.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtTokenProvider } from './providers/jwt-token.provider';
+import { EmailVerificationService } from './services/email-verification.service';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
@@ -20,8 +21,8 @@ import { LocalStrategy } from './strategies/local.strategy';
 @Module({
   imports: [
     UsersModule,
-    NotificationsModule,
     SecurityModule,
+    EmailModule,
     AuditLoggerModule,
     PassportModule.register({ defaultStrategy: AuthStrategy.JWT }),
     JwtModule.registerAsync({
@@ -43,6 +44,7 @@ import { LocalStrategy } from './strategies/local.strategy';
     LocalStrategy,
     JwtStrategy,
     JwtRefreshStrategy,
+    EmailVerificationService,
   ],
   exports: [JwtModule],
 })

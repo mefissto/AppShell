@@ -27,4 +27,5 @@ export declare interface JoiSchema {
   CRON_JOBS_ENABLED: Joi.StringSchema;
   TASK_REMINDER_CRON: Joi.StringSchema;
   CLEANUP_SESSIONS_CRON: Joi.StringSchema;
+  EMAIL_OUTBOX_INTERVAL: Joi.NumberSchema;
 }

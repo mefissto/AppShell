@@ -69,4 +69,5 @@ export default Joi.object<JoiSchema>({
   CRON_JOBS_ENABLED: Joi.string().valid('true', 'false').required(),
   TASK_REMINDER_CRON: cronExpressionSchema.required(),
   CLEANUP_SESSIONS_CRON: cronExpressionSchema.required(),
+  EMAIL_OUTBOX_INTERVAL: Joi.number().integer().positive().required(),
 });

@@ -7,6 +7,7 @@ import {
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
+import { EmailOutboxService } from '@modules/email-outbox/email-outbox.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { TasksService } from '@modules/tasks/tasks.service';
 import {
@@ -54,6 +55,7 @@ describe('TaskRemindersService', () => {
     id: 't1',
     userId: 'u1',
     title: 'Review',
+    user: { email: 'user@example.test' },
     dueDate: null as Date | null,
   };
   const pendingWhere = {
@@ -100,6 +102,10 @@ describe('TaskRemindersService', () => {
     const module = await Test.createTestingModule({
       providers: [
         TaskRemindersService,
+        {
+          provide: EmailOutboxService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
+        },
         { provide: PrismaService, useValue: prisma },
         { provide: LoggerService, useValue: logger },
         { provide: NotificationsService, useValue: notifications },
@@ -597,7 +603,12 @@ describe('TaskRemindersService', () => {
           },
           include: {
             task: {
-              select: { title: true, dueDate: true, userId: true },
+              select: {
+                title: true,
+                dueDate: true,
+                userId: true,
+                user: { select: { email: true } },
+              },
             },
           },
           data: { status: Status.COMPLETED, processedAt: now },
@@ -763,7 +774,8 @@ describe('Task deletion reminder cancellation', () => {
   let tasks: TasksService;
   let tx: {
     task: { updateMany: jest.Mock };
-    taskReminder: { updateMany: jest.Mock };
+    taskReminder: { updateMany: jest.Mock; findMany: jest.Mock };
+    emailOutbox: { updateMany: jest.Mock };
   };
   let prisma: { $transaction: jest.Mock };
   let audit: { log: jest.Mock };
@@ -771,7 +783,11 @@ describe('Task deletion reminder cancellation', () => {
     jest.useFakeTimers().setSystemTime(now);
     tx = {
       task: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-      taskReminder: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
+      taskReminder: {
+        updateMany: jest.fn().mockResolvedValue({ count: 2 }),
+        findMany: jest.fn().mockResolvedValue([{ id: 'r1' }, { id: 'r2' }]),
+      },
+      emailOutbox: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
     prisma = {
       $transaction: jest
@@ -786,6 +802,7 @@ describe('Task deletion reminder cancellation', () => {
       providers: [
         TasksService,
         TaskRemindersService,
+        EmailOutboxService,
         { provide: PrismaService, useValue: prisma },
         { provide: PaginationService, useValue: {} },
         { provide: AuditLoggerService, useValue: audit },
@@ -820,6 +837,7 @@ describe('Task deletion reminder cancellation', () => {
     expect(tx.task.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
       tx.taskReminder.updateMany.mock.invocationCallOrder[0],
     );
+    expect(tx.emailOutbox.updateMany).toHaveBeenCalledTimes(1);
     expect(audit.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: TaskAuditAction.TASK_DELETE_SUCCESS }),
     );
@@ -839,7 +857,13 @@ describe('Task deletion reminder cancellation', () => {
     );
   });
 
-  it.each(['delete', 'cancel', 'transaction'])(
+  it.each([
+    'delete',
+    'cancel',
+    'select-reminders',
+    'cancel-emails',
+    'transaction',
+  ])(
     'propagates %s failure without reporting deletion success',
     async (stage) => {
       // Arrange
@@ -847,6 +871,10 @@ describe('Task deletion reminder cancellation', () => {
       if (stage === 'delete') tx.task.updateMany.mockRejectedValueOnce(error);
       if (stage === 'cancel')
         tx.taskReminder.updateMany.mockRejectedValueOnce(error);
+      if (stage === 'select-reminders')
+        tx.taskReminder.findMany.mockRejectedValueOnce(error);
+      if (stage === 'cancel-emails')
+        tx.emailOutbox.updateMany.mockRejectedValueOnce(error);
       if (stage === 'transaction')
         prisma.$transaction.mockRejectedValueOnce(error);
 
@@ -858,7 +886,7 @@ describe('Task deletion reminder cancellation', () => {
           action: TaskAuditAction.TASK_DELETE_FAILURE,
         }),
       );
-      if (stage !== 'cancel')
+      if (stage === 'delete' || stage === 'transaction')
         expect(tx.taskReminder.updateMany).not.toHaveBeenCalled();
     },
   );

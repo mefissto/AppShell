@@ -1,5 +1,5 @@
 import { PrismaService } from '@database/prisma.service';
-import { Prisma } from '@generated/prisma';
+import { EmailOutboxStatus, Prisma } from '@generated/prisma';
 
 import { EmailOutboxService } from './email-outbox.service';
 
@@ -80,5 +80,55 @@ describe('EmailOutboxService.cancelForReminders', () => {
 
     // Assert
     await expect(cancellation).rejects.toBe(error);
+  });
+});
+
+describe('EmailOutboxService.startDeliveryAttempt', () => {
+  let updateManyAndReturn: jest.Mock;
+  let service: EmailOutboxService;
+
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-22T10:00:00Z'));
+    updateManyAndReturn = jest.fn().mockResolvedValue([{ attempts: 2 }]);
+    service = new EmailOutboxService({
+      emailOutbox: { updateManyAndReturn },
+    } as unknown as PrismaService);
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it.each([0, -1, NaN, Infinity, -Infinity])(
+    'rejects invalid lease duration %s before updating',
+    async (duration) => {
+      await expect(
+        service.startDeliveryAttempt('email-1', 'claim-1', duration),
+      ).rejects.toThrow('Invalid lease duration');
+      expect(updateManyAndReturn).not.toHaveBeenCalled();
+    },
+  );
+
+  it('renews the owned processing lease while incrementing attempts', async () => {
+    await expect(
+      service.startDeliveryAttempt('email-1', 'claim-1', 60000),
+    ).resolves.toBe(2);
+    expect(updateManyAndReturn).toHaveBeenCalledWith({
+      where: {
+        id: 'email-1',
+        claimToken: 'claim-1',
+        status: EmailOutboxStatus.PROCESSING,
+      },
+      data: {
+        attempts: { increment: 1 },
+        lockedUntil: new Date(Date.now() + 60000),
+      },
+      select: { attempts: true },
+    });
+  });
+
+  it('returns null when the claim no longer owns a processing email', async () => {
+    updateManyAndReturn.mockResolvedValue([]);
+    await expect(
+      service.startDeliveryAttempt('email-1', 'stale-claim', 60000),
+    ).resolves.toBeNull();
   });
 });

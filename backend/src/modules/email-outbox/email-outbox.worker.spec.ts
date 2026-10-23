@@ -7,7 +7,8 @@ import { EmailSenderService } from '@modules/email/email-sender.service';
 import { EmailTemplateService } from '@modules/email/email-template.service';
 import {
   EMAIL_OUTBOX_BATCH_SIZE,
-  EMAIL_OUTBOX_CLAIM_INTERVAL_MINUTES,
+  EMAIL_OUTBOX_LOCK_DURATION_MINUTES,
+  EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
   EMAIL_OUTBOX_RETRY_MAX_ATTEMPTS,
 } from './constants/email-outbox.const';
 import { EmailOutboxService } from './email-outbox.service';
@@ -83,21 +84,42 @@ describe('EmailOutboxWorker', () => {
     // Assert
     expect(outbox.claimBatch).toHaveBeenCalledWith(
       EMAIL_OUTBOX_BATCH_SIZE,
-      EMAIL_OUTBOX_CLAIM_INTERVAL_MINUTES,
+      EMAIL_OUTBOX_LOCK_DURATION_MINUTES,
     );
     expect(outbox.startDeliveryAttempt).toHaveBeenCalledWith(
       email.id,
       email.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
     );
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({
-      to: email.to,
-      subject: email.subject,
-      html: '<p>Task: Task &amp; title</p>',
-      text: 'Task: Task & title',
-    });
+    expect(send).toHaveBeenCalledWith(
+      {
+        to: email.to,
+        subject: email.subject,
+        html: '<p>Task: Task &amp; title</p>',
+        text: 'Task: Task & title',
+      },
+      'EMAIL_OUTBOX/email-1',
+    );
     expect(outbox.markAsSent).toHaveBeenCalledWith(email.id, email.claimToken);
     expect(outbox.handleDeliveryFailure).not.toHaveBeenCalled();
+  });
+
+  it('reuses the idempotency key after a retry with a new claim token', async () => {
+    send.mockRejectedValueOnce(
+      new EmailDeliveryError('Unavailable', undefined, true),
+    );
+    await worker.processBatch();
+    email.claimToken = 'claim-retry';
+    email.attempts = 1;
+    outbox.startDeliveryAttempt.mockResolvedValue(2);
+    await worker.processBatch();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls.map((call) => call[1])).toEqual([
+      'EMAIL_OUTBOX/email-1',
+      'EMAIL_OUTBOX/email-1',
+    ]);
+    expect(outbox.markAsSent).toHaveBeenCalledWith(email.id, 'claim-retry');
   });
 
   it.each([

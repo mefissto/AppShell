@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '@database/prisma.service';
+import { EntityType } from '@enums/entity.enum';
 import { EmailOutbox, EmailOutboxStatus, Prisma } from '@generated/prisma';
 
-import { EntityType } from '@enums/entity.enum';
 import { CreateEmailOutboxInput } from './interfaces/create-email-outbox.interface';
 
 @Injectable()
@@ -31,7 +31,12 @@ export class EmailOutboxService {
   async startDeliveryAttempt(
     emailId: string,
     claimToken: string,
+    leaseDurationMillis: number,
   ): Promise<number | null> {
+    if (!Number.isFinite(leaseDurationMillis) || leaseDurationMillis <= 0) {
+      throw new Error(`Invalid lease duration: ${leaseDurationMillis}`);
+    }
+
     const results = await this.prisma.emailOutbox.updateManyAndReturn({
       where: {
         id: emailId,
@@ -40,6 +45,7 @@ export class EmailOutboxService {
       },
       data: {
         attempts: { increment: 1 },
+        lockedUntil: new Date(Date.now() + leaseDurationMillis),
       },
       select: {
         attempts: true,

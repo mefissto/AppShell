@@ -6,12 +6,15 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { EmailDeliveryError } from '@common/errors/email-delivery.error';
 import { EmailTemplateError } from '@common/errors/email-template.error';
+import { IDEMPOTENCY_KEY_SEPARATOR } from '@constants/constants';
+import { EntityType } from '@enums/entity.enum';
 import { isEmailPayload } from '@modules/email/validators/email-payload.validator';
 import { castExists } from '@utils/asserts.utils';
 import { exponentialDelay } from '@utils/exponential-delay';
 import {
   EMAIL_OUTBOX_BATCH_SIZE,
-  EMAIL_OUTBOX_CLAIM_INTERVAL_MINUTES,
+  EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
+  EMAIL_OUTBOX_LOCK_DURATION_MINUTES,
   EMAIL_OUTBOX_RETRY_MAX_ATTEMPTS,
 } from './constants/email-outbox.const';
 import { EmailOutboxService } from './email-outbox.service';
@@ -30,7 +33,7 @@ export class EmailOutboxWorker {
   async processBatch() {
     const claimedBatch = await this.emailOutboxService.claimBatch(
       EMAIL_OUTBOX_BATCH_SIZE,
-      EMAIL_OUTBOX_CLAIM_INTERVAL_MINUTES,
+      EMAIL_OUTBOX_LOCK_DURATION_MINUTES,
     );
 
     for (const email of claimedBatch) {
@@ -87,6 +90,7 @@ export class EmailOutboxWorker {
       attempts = await this.emailOutboxService.startDeliveryAttempt(
         email.id,
         email.claimToken,
+        EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
       );
 
       if (!attempts) {
@@ -96,11 +100,15 @@ export class EmailOutboxWorker {
         return;
       }
 
-      await this.emailSenderService.send({
-        to: email.to,
-        subject: email.subject,
-        ...template,
-      });
+      const idempotencyKey = `${EntityType.EMAIL_OUTBOX}${IDEMPOTENCY_KEY_SEPARATOR}${email.id}`;
+      await this.emailSenderService.send(
+        {
+          to: email.to,
+          subject: email.subject,
+          ...template,
+        },
+        idempotencyKey,
+      );
       const isMarkedAsSent = await this.emailOutboxService.markAsSent(
         email.id,
         email.claimToken,

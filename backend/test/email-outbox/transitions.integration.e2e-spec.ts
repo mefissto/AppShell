@@ -7,7 +7,10 @@ import { EntityType } from '@enums/entity.enum';
 import { EmailTemplate } from '@enums/email-template.enum';
 import { EmailOutbox, EmailOutboxStatus } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
-import { EMAIL_OUTBOX_RETRY_MAX_ATTEMPTS } from '@modules/email-outbox/constants/email-outbox.const';
+import {
+  EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
+  EMAIL_OUTBOX_RETRY_MAX_ATTEMPTS,
+} from '@modules/email-outbox/constants/email-outbox.const';
 import { EmailOutboxService } from '@modules/email-outbox/email-outbox.service';
 import { EmailOutboxWorker } from '@modules/email-outbox/email-outbox.worker';
 import { EmailSenderService } from '@modules/email/email-sender.service';
@@ -124,7 +127,11 @@ describe('Email outbox transitions (e2e)', () => {
     // Arrange: simulate a worker that started delivery and then stopped renewing its lease.
     const created = await createEmail();
     const original = await claimEmail(created.id);
-    await service.startDeliveryAttempt(original.id, original.claimToken);
+    await service.startDeliveryAttempt(
+      original.id,
+      original.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
+    );
     await prisma.emailOutbox.update({
       where: { id: original.id },
       data: { lockedUntil: new Date(Date.now() - 60000) },
@@ -154,6 +161,7 @@ describe('Email outbox transitions (e2e)', () => {
     const attempts = await service.startDeliveryAttempt(
       original.id,
       original.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
     );
     const markedAsSent = await service.markAsSent(
       original.id,
@@ -177,7 +185,11 @@ describe('Email outbox transitions (e2e)', () => {
     // Arrange
     const created = await createEmail();
     const owned = await claimEmail(created.id);
-    await service.startDeliveryAttempt(owned.id, owned.claimToken);
+    await service.startDeliveryAttempt(
+      owned.id,
+      owned.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
+    );
 
     // Act
     const markedAsSent = await service.markAsSent(owned.id, owned.claimToken);
@@ -210,7 +222,11 @@ describe('Email outbox transitions (e2e)', () => {
     // Arrange
     const created = await createEmail();
     const owned = await claimEmail(created.id);
-    await service.startDeliveryAttempt(owned.id, owned.claimToken);
+    await service.startDeliveryAttempt(
+      owned.id,
+      owned.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
+    );
     const nextAttemptAt = new Date(Date.now() + 600000);
 
     // Act
@@ -224,6 +240,7 @@ describe('Email outbox transitions (e2e)', () => {
     const staleAttempt = await service.startDeliveryAttempt(
       owned.id,
       owned.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
     );
 
     // Assert
@@ -249,12 +266,15 @@ describe('Email outbox transitions (e2e)', () => {
 
     // Assert
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({
-      to: recipient,
-      subject: 'Reminder',
-      html: '<p>Task: Task</p>',
-      text: 'Task: Task',
-    });
+    expect(send).toHaveBeenCalledWith(
+      {
+        to: recipient,
+        subject: 'Reminder',
+        html: '<p>Task: Task</p>',
+        text: 'Task: Task',
+      },
+      `EMAIL_OUTBOX/${created.id}`,
+    );
     const result = await readEmail(created.id);
     expect(result).toMatchObject({
       status: EmailOutboxStatus.SENT,
@@ -432,6 +452,7 @@ describe('Email outbox transitions (e2e)', () => {
     const attempt = await service.startDeliveryAttempt(
       owned.id,
       owned.claimToken,
+      EMAIL_OUTBOX_LOCK_DURATION_MILLIS,
     );
     const sent = await service.markAsSent(owned.id, owned.claimToken);
     const failed = await service.handleDeliveryFailure(

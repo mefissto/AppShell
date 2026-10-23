@@ -1,3 +1,4 @@
 export enum EntityType {
   TASK_REMINDER = 'TASK_REMINDER',
+  EMAIL_OUTBOX = 'EMAIL_OUTBOX',
 }

@@ -39,10 +39,23 @@ describe('EmailSenderService', () => {
     expect(Resend).toHaveBeenCalledTimes(1);
     expect(Resend).toHaveBeenCalledWith('test-key');
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({
-      ...input,
-      from: 'AppShell <sender@example.test>',
+    expect(send).toHaveBeenCalledWith(
+      {
+        ...input,
+        from: 'AppShell <sender@example.test>',
+      },
+      undefined,
+    );
+  });
+
+  it('passes the idempotency key to Resend as request options', async () => {
+    await expect(service.send(input, 'EMAIL_OUTBOX/email-1')).resolves.toEqual({
+      id: 'delivery-id',
     });
+    expect(send).toHaveBeenCalledWith(
+      { ...input, from: 'AppShell <sender@example.test>' },
+      { idempotencyKey: 'EMAIL_OUTBOX/email-1' },
+    );
   });
 
   describe.each(['returned', 'thrown'])('%s SDK errors', (mode) => {

@@ -15,7 +15,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
     "prisma:generate": "prisma generate && node ./scripts/post-prisma-generate.cjs",
-    "prisma:generate:dev": "cross-env APP_ENV=development prisma generate",
+    "prisma:generate:dev": "cross-env APP_ENV=development npm run prisma:generate",
     "prisma:migrate:dev": "cross-env APP_ENV=development npx prisma migrate dev",
     "prisma:seed": "npx prisma db seed",
     "prisma:seed:dev": "cross-env APP_ENV=development npx prisma db seed",

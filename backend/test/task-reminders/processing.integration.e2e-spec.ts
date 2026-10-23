@@ -107,6 +107,49 @@ describe('Processing task reminders (e2e)', () => {
       },
     });
 
+  it.each([true, false, null])(
+    'processes a reminder with emailNotificationsEnabled=%s',
+    async (enabled) => {
+      if (enabled === null) {
+        await prisma.userSettings.deleteMany({ where: { userId: ownerId } });
+      } else {
+        await prisma.userSettings.upsert({
+          where: { userId: ownerId },
+          create: { userId: ownerId, emailNotificationsEnabled: enabled },
+          update: { emailNotificationsEnabled: enabled },
+        });
+      }
+      const task = await createTask(ownerId);
+      const reminder = await createReminder(
+        task.id,
+        new Date(Date.now() - 60000),
+      );
+
+      await taskRemindersService.processDueReminders();
+      await taskRemindersService.processDueReminders();
+
+      expect(
+        await prisma.taskReminder.findUniqueOrThrow({
+          where: { id: reminder.id },
+        }),
+      ).toMatchObject({
+        status: TaskReminderStatus.COMPLETED,
+        processedAt: expect.any(Date) as Date,
+      });
+      expect(
+        await prisma.notification.count({ where: { reminderId: reminder.id } }),
+      ).toBe(1);
+      expect(
+        await prisma.emailOutbox.count({
+          where: {
+            entityId: reminder.id,
+            entityType: EntityType.TASK_REMINDER,
+          },
+        }),
+      ).toBe(enabled === false ? 0 : 1);
+    },
+  );
+
   it('reverts reminder processing if processing fails', async () => {
     const task = await createTask(ownerId);
     const pastRemindAt = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in the past
@@ -222,14 +265,14 @@ describe('Processing task reminders (e2e)', () => {
       expect.arrayContaining([
         expect.objectContaining({
           to: ownerUser.email,
-          subject: expect.stringContaining(task.title),
+          subject: expect.stringContaining(task.title) as string,
           payload: expect.objectContaining({
             template: EmailTemplate.TASK_REMINDER,
             data: expect.objectContaining({
               taskTitle: task.title,
               taskDueDate: task.dueDate?.toISOString() ?? null,
-            }),
-          }),
+            }) as unknown,
+          }) as unknown,
           entityId: reminder.id,
           entityType: EntityType.TASK_REMINDER,
         }),

@@ -35,7 +35,12 @@ describe('TaskRemindersService', () => {
     task: { findFirst: jest.Mock };
     taskReminder: ReturnType<typeof delegate>;
   };
-  let tx: { $queryRaw: jest.Mock; taskReminder: ReturnType<typeof delegate> };
+  let tx: {
+    $queryRaw: jest.Mock;
+    taskReminder: ReturnType<typeof delegate>;
+    userSettings: { findUnique: jest.Mock };
+  };
+  let outbox: { create: jest.Mock };
   let logger: { error: jest.Mock };
   let notifications: { createNotification: jest.Mock };
 
@@ -87,6 +92,7 @@ describe('TaskRemindersService', () => {
       taskReminder: delegate(),
     };
     tx = {
+      userSettings: { findUnique: jest.fn().mockResolvedValue(null) },
       $queryRaw: jest.fn().mockResolvedValue([{ id: 't1' }]),
       taskReminder: delegate(),
     };
@@ -99,12 +105,13 @@ describe('TaskRemindersService', () => {
     notifications = {
       createNotification: jest.fn().mockResolvedValue(undefined),
     };
+    outbox = { create: jest.fn().mockResolvedValue(undefined) };
     const module = await Test.createTestingModule({
       providers: [
         TaskRemindersService,
         {
           provide: EmailOutboxService,
-          useValue: { create: jest.fn().mockResolvedValue(undefined) },
+          useValue: outbox,
         },
         { provide: PrismaService, useValue: prisma },
         { provide: LoggerService, useValue: logger },
@@ -636,6 +643,41 @@ describe('TaskRemindersService', () => {
       },
     );
 
+    it.each([
+      { settings: { emailNotificationsEnabled: true }, expectedEmails: 1 },
+      { settings: { emailNotificationsEnabled: false }, expectedEmails: 0 },
+      { settings: null, expectedEmails: 1 },
+    ])(
+      'creates $expectedEmails emails for settings $settings while preserving the in-app notification',
+      async ({ settings, expectedEmails }) => {
+        tx.userSettings.findUnique.mockResolvedValueOnce(settings);
+
+        await service.processDueReminders();
+
+        expect(tx.userSettings.findUnique).toHaveBeenCalledWith({
+          where: { userId: task.userId },
+          select: { emailNotificationsEnabled: true },
+        });
+        expect(tx.taskReminder.updateManyAndReturn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: { status: Status.COMPLETED, processedAt: now },
+          }),
+        );
+        expect(notifications.createNotification).toHaveBeenCalledTimes(1);
+        expect(outbox.create).toHaveBeenCalledTimes(expectedEmails);
+        if (expectedEmails) {
+          expect(outbox.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+              to: task.user.email,
+              entityId: 'r1',
+            }),
+            tx,
+          );
+        }
+        expect(logger.error).not.toHaveBeenCalled();
+      },
+    );
+
     it('skips a reminder removed after selection', async () => {
       // Arrange
       tx.taskReminder.findUnique.mockResolvedValueOnce(null);
@@ -681,6 +723,7 @@ describe('TaskRemindersService', () => {
       'lock',
       'update',
       'notification',
+      'settings',
       'non-Error',
     ])('isolates %s failure and continues in selected order', async (stage) => {
       // Arrange
@@ -697,6 +740,8 @@ describe('TaskRemindersService', () => {
       if (stage === 'lock') tx.$queryRaw.mockRejectedValueOnce(error);
       if (stage === 'update')
         tx.taskReminder.updateManyAndReturn.mockRejectedValueOnce(error);
+      if (stage === 'settings')
+        tx.userSettings.findUnique.mockRejectedValueOnce(error);
       if (stage === 'notification' || stage === 'non-Error')
         notifications.createNotification.mockRejectedValueOnce(error);
 

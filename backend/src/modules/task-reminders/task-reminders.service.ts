@@ -328,6 +328,16 @@ export class TaskRemindersService {
             transactionClient,
           );
 
+          const settings = await transactionClient.userSettings.findUnique({
+            where: { userId: task.userId },
+            select: { emailNotificationsEnabled: true },
+          });
+          // Check if the user has email notifications enabled before sending an email
+          // If settings not found treat it as email notifications enabled by default
+          if (settings?.emailNotificationsEnabled === false) {
+            return;
+          }
+
           await this.emailOutboxService.create(
             {
               to: task.user.email,

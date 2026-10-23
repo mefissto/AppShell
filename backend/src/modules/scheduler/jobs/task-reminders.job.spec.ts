@@ -26,8 +26,8 @@ describe('TaskRemindersJob', () => {
     };
 
     job = new TaskRemindersJob(
-      runner as SchedulerRunner,
-      taskRemindersService as TaskRemindersService,
+      runner as unknown as SchedulerRunner,
+      taskRemindersService as unknown as TaskRemindersService,
     );
   });
 

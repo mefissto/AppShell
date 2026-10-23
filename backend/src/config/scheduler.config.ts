@@ -11,5 +11,6 @@ export default registerAs(
     cronJobsEnabled: process.env.CRON_JOBS_ENABLED === 'true',
     cronCleanupSessions: process.env.CLEANUP_SESSIONS_CRON as string,
     cronTaskReminders: process.env.TASK_REMINDER_CRON as string,
+    emailOutboxInterval: parseInt(process.env.EMAIL_OUTBOX_INTERVAL as string, 10),
   }),
 );

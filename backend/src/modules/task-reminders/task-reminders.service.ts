@@ -12,8 +12,11 @@ import {
   TaskReminderStatus,
 } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
+import { EmailOutboxService } from '@modules/email-outbox/email-outbox.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 
+import { EmailTemplate } from '@enums/email-template.enum';
+import { EntityType } from '@enums/entity.enum';
 import { Notification } from '@modules/notifications/interfaces/notification.interface';
 import { TaskReminderEntity } from './entities/task-reminder.entity';
 
@@ -23,6 +26,7 @@ export class TaskRemindersService {
     private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
     private readonly notificationsService: NotificationsService,
+    private readonly emailOutboxService: EmailOutboxService,
   ) {}
 
   async findAllForTask(
@@ -289,7 +293,12 @@ export class TaskRemindersService {
             },
             include: {
               task: {
-                select: { title: true, dueDate: true, userId: true },
+                select: {
+                  title: true,
+                  dueDate: true,
+                  userId: true,
+                  user: { select: { email: true } },
+                },
               },
             },
             data: {
@@ -316,6 +325,33 @@ export class TaskRemindersService {
           // Use the transaction to create the notification within the same atomic operation
           await this.notificationsService.createNotification(
             notificationPayload,
+            transactionClient,
+          );
+
+          const settings = await transactionClient.userSettings.findUnique({
+            where: { userId: task.userId },
+            select: { emailNotificationsEnabled: true },
+          });
+          // Check if the user has email notifications enabled before sending an email
+          // If settings not found treat it as email notifications enabled by default
+          if (settings?.emailNotificationsEnabled === false) {
+            return;
+          }
+
+          await this.emailOutboxService.create(
+            {
+              to: task.user.email,
+              subject: `Reminder: Task "${task.title}"`,
+              payload: {
+                template: EmailTemplate.TASK_REMINDER,
+                data: {
+                  taskTitle: task.title,
+                  taskDueDate: task.dueDate?.toISOString() ?? null,
+                },
+              },
+              entityType: EntityType.TASK_REMINDER,
+              entityId: reminderId,
+            },
             transactionClient,
           );
         }

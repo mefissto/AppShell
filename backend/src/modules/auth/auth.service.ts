@@ -20,7 +20,6 @@ import {
   AuthAuditAction,
   UserAuditAction,
 } from '@loggers/enums/audit-actions.enum';
-import { NotificationsService } from '@modules/notifications/notifications.service';
 import { SessionEntity } from '@modules/security/entities/session.entity';
 import { HashingService } from '@modules/security/services/hashing.service';
 import { SessionsService } from '@modules/security/services/sessions.service';
@@ -31,6 +30,7 @@ import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up-dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtTokenProvider } from './providers/jwt-token.provider';
+import { EmailVerificationService } from './services/email-verification.service';
 
 @Injectable()
 export class AuthService {
@@ -43,9 +43,9 @@ export class AuthService {
     private readonly sessionsService: SessionsService,
     private readonly jwtTokenProvider: JwtTokenProvider,
     private readonly hashingService: HashingService,
-    private readonly notificationsService: NotificationsService,
     private readonly logger: LoggerService,
     private readonly auditLogger: AuditLoggerService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {
     this.logger.setContext(AuthService.name);
   }
@@ -91,16 +91,15 @@ export class AuthService {
       );
     }
 
-    await this.notificationsService.sendEmailVerificationEmail({
-      to: signUpDto.email,
-      subject: 'Verify Your Email Address',
-      data: {
+    await this.emailVerificationService.sendEmailVerificationEmail(
+      signUpDto.email,
+      {
         userName: signUpDto.name || signUpDto.email,
         verificationLink: `${this.authEnvConfig.emailVerificationUrl}?token=${emailVerificationToken}&email=${encodeURIComponent(
           signUpDto.email,
         )}`,
       },
-    });
+    );
 
     const user = await this.usersService.create(signUpDto, {
       emailVerificationToken: await this.hashingService.hash(

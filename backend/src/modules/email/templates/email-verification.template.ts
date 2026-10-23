@@ -1,16 +1,17 @@
-import { EmailVerificationPayload } from '../interfaces/email-verification.interface';
+import escapeHtml from 'escape-html';
+import { EmailVerificationPayloadData } from '../interfaces/email-payload-data.interface';
 
 export function getEmailVerificationText({
   userName,
   verificationLink,
-}: EmailVerificationPayload): string {
-  return `Hi ${userName},\n\nThank you for signing up! Please verify your email address by clicking the link below:\n\n${verificationLink}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.\n\nBest regards,\nThe Team`;
+}: EmailVerificationPayloadData): string {
+  return `Hi ${userName},\n\nThank you for signing up! Please verify your email address by clicking the link below:\n\n${verificationLink}\n\nThis link will expire in 10 minutes.\n\nIf you didn't create an account, please ignore this email.\n\nBest regards,\nThe Team`;
 }
 
 export function getEmailVerificationHtml({
   userName,
   verificationLink,
-}: EmailVerificationPayload): string {
+}: EmailVerificationPayloadData): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -29,7 +30,7 @@ export function getEmailVerificationHtml({
           <tr>
             <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
               <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">
-                Verify Your Email
+                Please Verify Your Email
               </h1>
             </td>
           </tr>
@@ -38,7 +39,7 @@ export function getEmailVerificationHtml({
           <tr>
             <td style="padding: 40px;">
               <p style="margin: 0 0 16px 0; color: #51545e; font-size: 16px; line-height: 1.6;">
-                Hi <strong>${userName}</strong>,
+                Hi <strong>${escapeHtml(userName)}</strong>,
               </p>
               
               <p style="margin: 0 0 16px 0; color: #51545e; font-size: 16px; line-height: 1.6;">
@@ -53,7 +54,7 @@ export function getEmailVerificationHtml({
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="padding: 0 0 32px 0;">
-                    <a href="${verificationLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                    <a href="${escapeHtml(verificationLink)}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
                       Verify Email Address
                     </a>
                   </td>

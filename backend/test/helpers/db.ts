@@ -5,6 +5,9 @@ export const cleanupUserByEmail = async (
   prisma: PrismaService,
   email: string,
 ): Promise<void> => {
+  // Outbox entries have no user FK and must be removed explicitly.
+  await prisma.emailOutbox.deleteMany({ where: { to: email } });
+
   const users = await prisma.user.findMany({
     where: { email },
     select: { id: true },

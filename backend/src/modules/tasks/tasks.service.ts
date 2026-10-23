@@ -5,6 +5,7 @@ import { Prisma } from '@generated/prisma';
 import { LoggerService } from '@loggers/app/logger.service';
 import { AuditLoggerService } from '@loggers/audit/audit-logger.service';
 import { TaskAuditAction } from '@loggers/enums/audit-actions.enum';
+import { EmailOutboxService } from '@modules/email-outbox/email-outbox.service';
 import { TaskRemindersService } from '@modules/task-reminders/task-reminders.service';
 import { EntityListRequestBuilder } from '@pagination/builders/entity-list-request.builder';
 import { EntityListResponseDto } from '@pagination/interfaces/entity-list-response.dto';
@@ -24,6 +25,7 @@ export class TasksService {
     private readonly auditLogger: AuditLoggerService,
     private readonly logger: LoggerService,
     private readonly taskRemindersService: TaskRemindersService,
+    private readonly emailOutboxService: EmailOutboxService,
   ) {}
 
   /**
@@ -333,6 +335,17 @@ export class TasksService {
 
           await this.taskRemindersService.cancelPendingForTask(
             taskId,
+            transactionClient,
+          );
+
+          const reminders = await transactionClient.taskReminder.findMany({
+            select: { id: true },
+            where: { taskId },
+          });
+          const reminderIds = reminders.map((reminder) => reminder.id);
+
+          await this.emailOutboxService.cancelForReminders(
+            reminderIds,
             transactionClient,
           );
         },

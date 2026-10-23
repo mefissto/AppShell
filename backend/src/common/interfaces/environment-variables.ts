@@ -93,4 +93,5 @@ export interface SchedulerEnvConfig {
   cronJobsEnabled: boolean;
   cronCleanupSessions: string;
   cronTaskReminders: string;
+  emailOutboxInterval: number;
 }

@@ -1,0 +1,4 @@
+export enum EmailTemplate {
+  TASK_REMINDER = 'TASK_REMINDER',
+  EMAIL_VERIFICATION = 'EMAIL_VERIFICATION',
+}

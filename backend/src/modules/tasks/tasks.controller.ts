@@ -7,9 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
-  Post,
-  Query,
-  ValidationPipe,
+  Post
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -106,8 +104,7 @@ export class TasksController {
   })
   @ApiUnauthorizedResponse({ description: 'Authentication required.' })
   findAll(
-    @Query(new ValidationPipe({ transform: true }))
-    taskListRequestDto: TaskListRequestDto,
+    @Body() taskListRequestDto: TaskListRequestDto,
     @CurrentUser() currentUser: UserEntity,
   ): Promise<EntityListResponseDto<TaskEntity>> {
     return this.tasksService.findAll(taskListRequestDto, currentUser.id);

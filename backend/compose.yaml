@@ -109,7 +109,7 @@ services:
     
     volumes:
       # Persist database files in a named volume so data survives container restarts/recreates.
-      - db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql
 
     healthcheck:
       # Marks DB as healthy only when it accepts connections with the configured credentials/database.

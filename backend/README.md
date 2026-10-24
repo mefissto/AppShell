@@ -214,6 +214,93 @@ npm run format
 
 ## Database Management
 
+### Database Seeding
+
+Run the following commands from `backend` after installing dependencies, applying
+migrations, and generating the Prisma client as described above. Prisma runs
+`prisma/seeds/seed.ts` through the seed command in `prisma.config.ts`.
+
+**Environment and safety**
+
+Seeding is allowed only with `APP_ENV=development` or `APP_ENV=e2e`; `NODE_ENV`
+alone does not enable it. The npm scripts below set `APP_ENV` for you. The Prisma
+environment loader reads `.env`, then `.env.<APP_ENV>` with overrides, then
+`ENV_FILE` (if set) with overrides. Check the effective `DATABASE_URL` before
+running either workflow: the environment guard does not verify that the URL
+points to a development or test database. Use a local or disposable database,
+never production, and reserve the performance accounts for generated test data.
+
+**Development seed**
+
+Use this for everyday development and functional testing. It defines five users,
+five projects, and ten tasks in `prisma/seeds/seed-data.ts`. Stable IDs and Prisma
+`upsert` operations with empty updates make it non-destructive and repeatable:
+missing records are created, while existing records and your edits are preserved.
+All development seed operations run in one transaction.
+
+```bash
+npm run prisma:seed:dev -- -- --seedType default
+```
+
+For the e2e database, use `npm run prisma:seed:e2e -- -- --seedType default`.
+The first `--` forwards npm arguments; the second tells Prisma to pass the seed
+arguments to the configured script. `--seedType` is required, even for development.
+
+**Performance seed**
+
+Use this for larger datasets when checking task queries, pagination, or load.
+There is no dedicated performance npm script; select it through the same runner:
+
+```bash
+npm run prisma:seed:dev -- -- --seedType performance --taskTotalCount 20000 --taskBatchSize 1000
+```
+
+Replace `20000` and `1000` to customize the total task count and batch size; both
+must be positive safe integers. The current implementation has **no defaults**
+for either argument, so both are required. The command above explicitly requests
+20,000 tasks in batches of 1,000; it is an example, not a verified load benchmark.
+Use `prisma:seed:e2e` instead of `prisma:seed:dev` to target the e2e environment.
+
+The seed ensures five users with `performance-` prefixed IDs and emails, then
+creates five projects per user (25 total) and the requested number of tasks.
+Projects use `performance_project_...` IDs and tasks use `performance_task_...`
+IDs. Task values follow index-based patterns with stable IDs, cycling statuses
+and priorities; due dates alternate between `2026-11-30T00:00:00.000Z` and no date.
+
+**Warning: performance seeding deletes and regenerates existing performance
+data.** It keeps the five performance users through non-updating upserts, but
+deletes all tasks, owned projects, tags, notifications, task reminders, and related
+task-reminder email outbox entries for those users, including manually added data.
+Ordinary development users, projects, and tasks are outside the cleanup filters.
+Cleanup runs in a transaction; project creation and separate task batch inserts
+follow afterward. The full workflow is not atomic: an insertion failure can leave
+a partially regenerated dataset. Rerun with the same arguments to regenerate it.
+
+**Docker `db-seed` service**
+
+`compose.yaml` includes an optional service invoked with
+`docker compose --profile seed run --rm db-seed`. It uses the existing
+`appshell/backend:latest` image, waits for a healthy database, and passes
+`DATABASE_URL` and `APP_ENV` from Compose. It does not run during normal stack
+startup, wait for migrations, or restart automatically; prepare the image and
+apply migrations first.
+
+The service currently invokes `npm run prisma:seed`, whose package script is
+the literal `2`, so **this Docker command cannot currently seed the database**.
+It also supplies no required `--seedType`. This service is not a configured
+performance seed workflow; use the explicit npm commands above.
+
+**Verify the result**
+
+Check the logged environment and loaded files, task batch progress (performance
+only), and final `Database seeded successfully!` message. Open Prisma Studio
+using the command below with the same `APP_ENV`, `ENV_FILE` (if used), and database
+configuration as the seed. For development, inspect the predefined IDs such as
+`john.doe-1`, `project-one-1`, and `task-one-1`; rerunning should preserve edits.
+For performance, filter by the five performance user IDs and confirm 25 owned
+projects and the requested total task count (20,000 for the example), rather than
+counting all rows in a database that may also contain development data.
+
 ### View Data with Prisma Studio
 
 ```bash

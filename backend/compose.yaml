@@ -195,7 +195,9 @@ services:
     profiles: ["seed"]
     
     image: appshell/backend:latest # Use the same image as backend since it has the code and dependencies needed for seeding.
-    command: ["npm", "run", "prisma:seed"] # Override default command to run seeding script instead of backend.
+    # The first "--" forwards arguments through npm; 
+    # the second tells Prisma to pass "--seedType default" to the seed script.
+    command: ["npm", "run", "prisma:seed", "--", "--", "--seedType", "default"] # Override default command to run seeding script instead of backend.
     
     depends_on:
       database:
